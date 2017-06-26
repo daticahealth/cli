@@ -3,6 +3,7 @@ package keys
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/daticahealth/cli/lib/auth"
@@ -12,7 +13,11 @@ import (
 )
 
 func CmdSet(path string, settings *models.Settings) error {
-	fullPath, err := homedir.Expand(path)
+	homePath, err := homedir.Expand(path)
+	if err != nil {
+		return err
+	}
+	fullPath, err := filepath.Abs(homePath)
 	if err != nil {
 		return err
 	}

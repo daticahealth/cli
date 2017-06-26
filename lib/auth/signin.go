@@ -44,7 +44,7 @@ func (a *SAuth) Signin() (*models.User, error) {
 	}
 
 	a.Settings.UsersID = user.UsersID
-	a.Settings.Username = user.Username
+	a.Settings.Email = user.Email
 	a.Settings.SessionToken = user.SessionToken
 
 	config.SaveSettings(a.Settings)
@@ -64,7 +64,6 @@ type signinResponse struct {
 func (sr *signinResponse) toUser() *models.User {
 	return &models.User{
 		UsersID:      sr.ID,
-		Username:     sr.Name,
 		Email:        sr.Email,
 		SessionToken: sr.SessionToken,
 	}
@@ -72,16 +71,16 @@ func (sr *signinResponse) toUser() *models.User {
 
 func (a *SAuth) signInWithCredentials() (*signinResponse, error) {
 	login := models.Login{
-		Identifier: a.Settings.Username,
+		Identifier: a.Settings.Email,
 		Password:   a.Settings.Password,
 	}
-	if a.Settings.Username == "" || a.Settings.Password == "" {
-		username, password, err := a.Prompts.UsernamePassword()
+	if a.Settings.Email == "" || a.Settings.Password == "" {
+		email, password, err := a.Prompts.EmailPassword(a.Settings.Email, a.Settings.Password)
 		if err != nil {
 			return nil, err
 		}
 		login = models.Login{
-			Identifier: username,
+			Identifier: email,
 			Password:   password,
 		}
 	}

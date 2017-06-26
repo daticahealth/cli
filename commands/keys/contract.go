@@ -33,7 +33,7 @@ var AddSubCmd = models.Command{
 	ShortHelp: "Add a public key",
 	LongHelp: "`keys add` allows you to add a new SSH key to your user account. " +
 		"SSH keys added to your user account should be private and not shared with others. " +
-		"SSH keys can be used for authentication (as opposed to the traditional username and password) as well as pushing code to an environment's code services. " +
+		"SSH keys can be used for authentication (as opposed to the traditional email and password) as well as pushing code to an environment's code services. " +
 		"Please note, you must specify the path to the public key file and not the private key. " +
 		"All SSH keys should be in either OpenSSH RSA format or PEM format. Here is a sample command\n\n" +
 		"```\ndatica keys add my_prod_key ~/.ssh/prod_rsa.pub\n```",
@@ -100,7 +100,7 @@ var RemoveSubCmd = models.Command{
 var SetSubCmd = models.Command{
 	Name:      "set",
 	ShortHelp: "Set your auth key",
-	LongHelp: "`keys set` allows the CLI to use an SSH key for authentication instead of the traditional username and password combination. " +
+	LongHelp: "`keys set` allows the CLI to use an SSH key for authentication instead of the traditional email and password combination. " +
 		"This can be useful for automation or where shared workstations are involved. " +
 		"Please note that you must pass in the path to the private key and not the public key. " +
 		"The given key must already be added to your account by using the [keys add](#keys-add) command. " +

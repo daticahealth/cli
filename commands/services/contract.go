@@ -22,20 +22,6 @@ var Cmd = models.Command{
 			cmd.CommandLong(ListSubCmd.Name, ListSubCmd.ShortHelp, ListSubCmd.LongHelp, ListSubCmd.CmdFunc(settings))
 			cmd.CommandLong(StopSubCmd.Name, StopSubCmd.ShortHelp, StopSubCmd.LongHelp, StopSubCmd.CmdFunc(settings))
 			cmd.CommandLong(RenameSubCmd.Name, RenameSubCmd.ShortHelp, RenameSubCmd.LongHelp, RenameSubCmd.CmdFunc(settings))
-			cmd.Action = func() {
-				logrus.Warnln("This command has been moved! Please use \"datica services list\" instead. This alias will be removed in the next CLI update.")
-				logrus.Warnln("You can list all available services subcommands by running \"datica services --help\".")
-				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
-					logrus.Fatal(err.Error())
-				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
-					logrus.Fatal(err.Error())
-				}
-				err := CmdServices(New(settings), volumes.New(settings))
-				if err != nil {
-					logrus.Fatal(err.Error())
-				}
-			}
 		}
 	},
 }
@@ -54,7 +40,7 @@ var ListSubCmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdServices(New(settings), volumes.New(settings))
@@ -79,7 +65,7 @@ var RenameSubCmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdRename(*serviceName, *label, New(settings))
@@ -107,7 +93,7 @@ var StopSubCmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdStop(*svcName, settings.Pod, New(settings), jobs.New(settings), volumes.New(settings), prompts.New())
@@ -124,7 +110,6 @@ var StopSubCmd = models.Command{
 type IServices interface {
 	List() (*[]models.Service, error)
 	ListByEnvID(envID, podID string) (*[]models.Service, error)
-	Retrieve(svcID string) (*models.Service, error)
 	RetrieveByLabel(label string) (*models.Service, error)
 	Update(svcID string, updates map[string]string) error
 }

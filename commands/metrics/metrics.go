@@ -9,7 +9,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/daticahealth/cli/commands/services"
 	"github.com/daticahealth/cli/models"
-	ui "github.com/gizak/termui"
 )
 
 var blacklist = map[string]struct{}{
@@ -34,10 +33,7 @@ type Transformer interface {
 
 // CmdMetrics prints out metrics for a given service or if the service is not
 // specified, metrics for the entire environment are printed.
-func CmdMetrics(svcName string, metricType MetricType, jsonFlag, csvFlag, textFlag, sparkFlag, streamFlag bool, mins int, im IMetrics, is services.IServices) error {
-	if sparkFlag {
-		logrus.Warnln("The \"--spark\" flag has been deprecated! Please use \"--csv\", \"--json\", or \"--text\" instead. \"--spark\" will be removed in the next CLI update.")
-	}
+func CmdMetrics(svcName string, metricType MetricType, jsonFlag, csvFlag, textFlag, streamFlag bool, mins int, im IMetrics, is services.IServices) error {
 	if streamFlag && (jsonFlag || csvFlag || mins != 1) {
 		return fmt.Errorf("--stream cannot be used with CSV or JSON formats and multiple records")
 	}
@@ -55,33 +51,6 @@ func CmdMetrics(svcName string, metricType MetricType, jsonFlag, csvFlag, textFl
 			Buffer:         buffer,
 			Writer:         csv.NewWriter(buffer),
 		}
-	} else if sparkFlag {
-		// the spark lines interface stays up until closed by the user, so
-		// we might as well keep updating it as long as it is there
-		streamFlag = true
-		mins = 30
-		err := ui.Init()
-		if err != nil {
-			return err
-		}
-		defer ui.Close()
-
-		p := ui.NewPar("PRESS q TO QUIT")
-		p.Border = false
-
-		p2 := ui.NewPar(fmt.Sprintf("%s Usage Metrics", metricsTypeToString(metricType)))
-		p2.Border = false
-
-		ui.Body.AddRows(
-			ui.NewRow(ui.NewCol(12, 0, p)),
-			ui.NewRow(ui.NewCol(12, 0, p2)),
-		)
-		ui.Body.Align()
-		ui.Render(ui.Body)
-
-		mt = &SparkTransformer{
-			SparkLines: map[string]*ui.Sparklines{},
-		}
 	} else if textFlag {
 		mt = &TextTransformer{}
 	}
@@ -93,73 +62,55 @@ func CmdMetrics(svcName string, metricType MetricType, jsonFlag, csvFlag, textFl
 		if service == nil {
 			return fmt.Errorf("Could not find a service with the label \"%s\"", svcName)
 		}
-		return CmdServiceMetrics(metricType, streamFlag, sparkFlag, mins, service, mt, im)
+		return CmdServiceMetrics(metricType, streamFlag, mins, service, mt, im)
 	}
-	return CmdEnvironmentMetrics(metricType, streamFlag, sparkFlag, mins, mt, im)
+	return CmdEnvironmentMetrics(metricType, streamFlag, mins, mt, im)
 }
 
-func CmdEnvironmentMetrics(metricType MetricType, stream, sparkLines bool, mins int, t Transformer, im IMetrics) error {
-	done := make(chan struct{})
-	go func() {
-		for {
-			metrics, err := im.RetrieveEnvironmentMetrics(mins)
-			if err != nil {
-				logrus.Fatal(err.Error())
-			}
-			switch metricType {
-			case CPU:
-				t.TransformGroupCPU(metrics)
-			case Memory:
-				t.TransformGroupMemory(metrics)
-			case NetworkIn:
-				t.TransformGroupNetworkIn(metrics)
-			case NetworkOut:
-				t.TransformGroupNetworkOut(metrics)
-			}
-			if !stream {
-				break
-			}
-			time.Sleep(time.Minute)
+func CmdEnvironmentMetrics(metricType MetricType, stream bool, mins int, t Transformer, im IMetrics) error {
+	for {
+		metrics, err := im.RetrieveEnvironmentMetrics(mins)
+		if err != nil {
+			logrus.Fatal(err.Error())
 		}
-		done <- struct{}{}
-	}()
-	if sparkLines {
-		sparkLinesEventLoop()
-	} else {
-		<-done
+		switch metricType {
+		case CPU:
+			t.TransformGroupCPU(metrics)
+		case Memory:
+			t.TransformGroupMemory(metrics)
+		case NetworkIn:
+			t.TransformGroupNetworkIn(metrics)
+		case NetworkOut:
+			t.TransformGroupNetworkOut(metrics)
+		}
+		if !stream {
+			break
+		}
+		time.Sleep(time.Minute)
 	}
 	return nil
 }
 
-func CmdServiceMetrics(metricType MetricType, stream, sparkLines bool, mins int, service *models.Service, t Transformer, im IMetrics) error {
-	done := make(chan struct{})
-	go func() {
-		for {
-			metrics, err := im.RetrieveServiceMetrics(mins, service.ID)
-			if err != nil {
-				logrus.Fatal(err.Error())
-			}
-			switch metricType {
-			case CPU:
-				t.TransformSingleCPU(metrics)
-			case Memory:
-				t.TransformSingleMemory(metrics)
-			case NetworkIn:
-				t.TransformSingleNetworkIn(metrics)
-			case NetworkOut:
-				t.TransformSingleNetworkOut(metrics)
-			}
-			if !stream {
-				break
-			}
-			time.Sleep(time.Minute)
+func CmdServiceMetrics(metricType MetricType, stream bool, mins int, service *models.Service, t Transformer, im IMetrics) error {
+	for {
+		metrics, err := im.RetrieveServiceMetrics(mins, service.ID)
+		if err != nil {
+			logrus.Fatal(err.Error())
 		}
-		done <- struct{}{}
-	}()
-	if sparkLines {
-		sparkLinesEventLoop()
-	} else {
-		<-done
+		switch metricType {
+		case CPU:
+			t.TransformSingleCPU(metrics)
+		case Memory:
+			t.TransformSingleMemory(metrics)
+		case NetworkIn:
+			t.TransformSingleNetworkIn(metrics)
+		case NetworkOut:
+			t.TransformSingleNetworkOut(metrics)
+		}
+		if !stream {
+			break
+		}
+		time.Sleep(time.Minute)
 	}
 	return nil
 }

@@ -15,7 +15,7 @@ func CmdBackup(databaseName string, skipPoll bool, id IDb, is services.IServices
 		return err
 	}
 	if service == nil {
-		return fmt.Errorf("Could not find a service with the label \"%s\". You can list services with the \"datica services\" command.", databaseName)
+		return fmt.Errorf("Could not find a service with the label \"%s\". You can list services with the \"datica services list\" command.", databaseName)
 	}
 	job, err := id.Backup(service)
 	if err != nil {
@@ -25,9 +25,9 @@ func CmdBackup(databaseName string, skipPoll bool, id IDb, is services.IServices
 	isSnapshotBackup := job.IsSnapshotBackup != nil && *job.IsSnapshotBackup
 	if !skipPoll {
 		// all because logrus treats print, println, and printf the same
-		logrus.Println("Polling until backup finishes.")
+		logrus.StandardLogger().Out.Write([]byte("Polling until backup finishes."))
 		if isSnapshotBackup {
-			logrus.Printf("This is a snapshot backup, it may be a while before this backup shows up in the \"datica db list %s\" command.", databaseName)
+			logrus.StandardLogger().Out.Write([]byte(fmt.Sprintf("\nThis is a snapshot backup, it may be a while before this backup shows up in the \"datica db list %s\" command.", databaseName)))
 			err = ij.WaitToAppear(job.ID, service.ID)
 			if err != nil {
 				return err
@@ -38,7 +38,7 @@ func CmdBackup(databaseName string, skipPoll bool, id IDb, is services.IServices
 			return err
 		}
 		job.Status = status
-		logrus.Printf("Ended in status '%s'", job.Status)
+		logrus.Printf("\nEnded in status '%s'", job.Status)
 		err = id.DumpLogs("backup", job, service)
 		if err != nil {
 			return err

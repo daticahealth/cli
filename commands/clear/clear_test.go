@@ -7,26 +7,24 @@ import (
 )
 
 var clearTests = []struct {
-	privKey    bool
-	session    bool
-	envs       bool
-	defaultEnv bool
-	pods       bool
+	privKey bool
+	session bool
+	envs    bool
+	pods    bool
 }{
-	{false, false, false, false, false},
-	{false, false, false, false, true},
-	{false, false, false, true, false},
-	{false, false, true, false, false},
-	{false, true, false, false, false},
-	{true, false, false, false, false},
-	{true, true, true, true, true},
+	{false, false, false, false},
+	{false, false, false, true},
+	{false, false, true, false},
+	{false, true, false, false},
+	{true, false, false, false},
+	{true, true, true, true},
 }
 
 func TestClear(t *testing.T) {
 	for _, data := range clearTests {
 		t.Logf("Data: %+v", data)
 		settings := test.GetSettings("")
-		err := CmdClear(data.privKey, data.session, data.envs, data.defaultEnv, data.pods, settings)
+		err := CmdClear(data.privKey, data.session, data.envs, data.pods, settings)
 		if err != nil {
 			t.Errorf("Unexpected error: %s", err)
 			continue
@@ -40,9 +38,6 @@ func TestClear(t *testing.T) {
 		}
 		if data.envs && settings.Environments != nil && len(settings.Environments) != 0 {
 			t.Errorf("Environments should have been cleared")
-		}
-		if data.defaultEnv && settings.Default != "" {
-			t.Errorf("Default should have been cleared")
 		}
 		if data.pods && settings.Pods != nil && len(*settings.Pods) != 0 {
 			t.Errorf("Pods should have been cleared")

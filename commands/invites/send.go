@@ -10,7 +10,7 @@ import (
 )
 
 func CmdSend(email string, envName string, ii IInvites, ip prompts.IPrompts) error {
-	err := ip.YesNo(fmt.Sprintf("Are you sure you want to invite %s to your %s organization? (y/n) ", email, envName))
+	err := ip.YesNo("", fmt.Sprintf("Are you sure you want to invite %s to your %s organization? (y/n) ", email, envName))
 	if err != nil {
 		return err
 	}

@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/daticahealth/cli/config"
 	"github.com/daticahealth/cli/models"
 )
 
 // CmdList lists all environments which the user has access to
-func CmdList(environments IEnvironments) error {
+func CmdList(settings *models.Settings, environments IEnvironments) error {
 	envs, errs := environments.List()
 	if envs == nil || len(*envs) == 0 {
 		logrus.Println("no environments found")
@@ -16,6 +17,7 @@ func CmdList(environments IEnvironments) error {
 		for _, env := range *envs {
 			logrus.Printf("%s: %s", env.Name, env.ID)
 		}
+		config.StoreEnvironments(envs, settings)
 	}
 	if errs != nil && len(errs) > 0 {
 		for pod, err := range errs {

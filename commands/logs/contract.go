@@ -38,7 +38,7 @@ var Cmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdLogs(*query, *follow || *tail, *hours, *mins, *secs, settings.EnvironmentID, settings, New(settings), prompts.New(), environments.New(settings), services.New(settings), sites.New(settings))
@@ -53,8 +53,8 @@ var Cmd = models.Command{
 
 // ILogs ...
 type ILogs interface {
-	Output(queryString, sessionToken, domain string, follow bool, hours, minutes, seconds, from int, startTimestamp time.Time, endTimestamp time.Time, env *models.Environment) (int, time.Time, error)
-	Stream(queryString, sessionToken, domain string, follow bool, hours, minutes, seconds, from int, timestamp time.Time, env *models.Environment) error
+	Output(queryString, sessionToken, domain string, from int, startTimestamp time.Time, endTimestamp time.Time) (int, error)
+	Stream(queryString, sessionToken, domain string, from int, timestamp time.Time) error
 	Watch(queryString, domain, sessionToken string) error
 }
 

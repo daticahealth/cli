@@ -28,7 +28,7 @@ func CmdDownload(databaseName, backupID, filePath string, force bool, id IDb, ip
 		return err
 	}
 	if service == nil {
-		return fmt.Errorf("Could not find a service with the label \"%s\". You can list services with the \"datica services\" command.", databaseName)
+		return fmt.Errorf("Could not find a service with the label \"%s\". You can list services with the \"datica services list\" command.", databaseName)
 	}
 	err = id.Download(backupID, filePath, service)
 	if err != nil {

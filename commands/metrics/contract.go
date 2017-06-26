@@ -42,7 +42,7 @@ var CPUSubCmd = models.Command{
 	ShortHelp: "Print service and environment CPU metrics in your local time zone",
 	LongHelp: "`metrics cpu` prints out CPU metrics for your environment or individual services. " +
 		"You can print out metrics in csv, json, plain text, or spark lines format. " +
-		"If you want plain text format, simply omit the `--json`, `--csv`, and `--spark` flags. " +
+		"If you want plain text format, omit the `--json` and `--csv` flags. " +
 		"You can only stream metrics using plain text or spark lines formats. " +
 		"To print out metrics for every service in your environment, omit the `SERVICE_NAME` argument. " +
 		"Otherwise you may choose a service, such as an app service, to retrieve metrics for. " +
@@ -57,22 +57,21 @@ var CPUSubCmd = models.Command{
 			json := subCmd.BoolOpt("json", false, "Output the data as json")
 			csv := subCmd.BoolOpt("csv", false, "Output the data as csv")
 			text := subCmd.BoolOpt("text", true, "Output the data in plain text")
-			spark := subCmd.BoolOpt("spark", false, "Output the data using spark lines")
 			stream := subCmd.BoolOpt("stream", false, "Repeat calls once per minute until this process is interrupted.")
 			mins := subCmd.IntOpt("m mins", 1, "How many minutes worth of metrics to retrieve.")
 			subCmd.Action = func() {
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdMetrics(*serviceName, CPU, *json, *csv, *text, *spark, *stream, *mins, New(settings), services.New(settings))
+				err := CmdMetrics(*serviceName, CPU, *json, *csv, *text, *stream, *mins, New(settings), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
 			}
-			subCmd.Spec = "[SERVICE_NAME] [(--json | --csv | --text | --spark)] [--stream] [-m]"
+			subCmd.Spec = "[SERVICE_NAME] [(--json | --csv | --text)] [--stream] [-m]"
 		}
 	},
 }
@@ -82,7 +81,7 @@ var MemorySubCmd = models.Command{
 	ShortHelp: "Print service and environment memory metrics in your local time zone",
 	LongHelp: "`metrics memory` prints out memory metrics for your environment or individual services. " +
 		"You can print out metrics in csv, json, plain text, or spark lines format. " +
-		"If you want plain text format, simply omit the `--json`, `--csv`, and `--spark` flags. " +
+		"If you want plain text format, omit the `--json` and `--csv` flags. " +
 		"You can only stream metrics using plain text or spark lines formats. " +
 		"To print out metrics for every service in your environment, omit the `SERVICE_NAME` argument. " +
 		"Otherwise you may choose a service, such as an app service, to retrieve metrics for. " +
@@ -97,22 +96,21 @@ var MemorySubCmd = models.Command{
 			json := subCmd.BoolOpt("json", false, "Output the data as json")
 			csv := subCmd.BoolOpt("csv", false, "Output the data as csv")
 			text := subCmd.BoolOpt("text", true, "Output the data in plain text")
-			spark := subCmd.BoolOpt("spark", false, "Output the data using spark lines")
 			stream := subCmd.BoolOpt("stream", false, "Repeat calls once per minute until this process is interrupted.")
 			mins := subCmd.IntOpt("m mins", 1, "How many minutes worth of metrics to retrieve.")
 			subCmd.Action = func() {
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdMetrics(*serviceName, Memory, *json, *csv, *text, *spark, *stream, *mins, New(settings), services.New(settings))
+				err := CmdMetrics(*serviceName, Memory, *json, *csv, *text, *stream, *mins, New(settings), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
 			}
-			subCmd.Spec = "[SERVICE_NAME] [(--json | --csv | --text | --spark)] [--stream] [-m]"
+			subCmd.Spec = "[SERVICE_NAME] [(--json | --csv | --text)] [--stream] [-m]"
 		}
 	},
 }
@@ -122,7 +120,7 @@ var NetworkInSubCmd = models.Command{
 	ShortHelp: "Print service and environment received network data metrics in your local time zone",
 	LongHelp: "`metrics network-in` prints out received network metrics for your environment or individual services. " +
 		"You can print out metrics in csv, json, plain text, or spark lines format. " +
-		"If you want plain text format, simply omit the `--json`, `--csv`, and `--spark` flags. " +
+		"If you want plain text format, omit the `--json` and `--csv` flags. " +
 		"You can only stream metrics using plain text or spark lines formats. " +
 		"To print out metrics for every service in your environment, omit the `SERVICE_NAME` argument. " +
 		"Otherwise you may choose a service, such as an app service, to retrieve metrics for. Here are some sample commands\n\n" +
@@ -136,22 +134,21 @@ var NetworkInSubCmd = models.Command{
 			json := subCmd.BoolOpt("json", false, "Output the data as json")
 			csv := subCmd.BoolOpt("csv", false, "Output the data as csv")
 			text := subCmd.BoolOpt("text", true, "Output the data in plain text")
-			spark := subCmd.BoolOpt("spark", false, "Output the data using spark lines")
 			stream := subCmd.BoolOpt("stream", false, "Repeat calls once per minute until this process is interrupted.")
 			mins := subCmd.IntOpt("m mins", 1, "How many minutes worth of metrics to retrieve.")
 			subCmd.Action = func() {
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdMetrics(*serviceName, NetworkIn, *json, *csv, *text, *spark, *stream, *mins, New(settings), services.New(settings))
+				err := CmdMetrics(*serviceName, NetworkIn, *json, *csv, *text, *stream, *mins, New(settings), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
 			}
-			subCmd.Spec = "[SERVICE_NAME] [(--json | --csv | --text | --spark)] [--stream] [-m]"
+			subCmd.Spec = "[SERVICE_NAME] [(--json | --csv | --text)] [--stream] [-m]"
 		}
 	},
 }
@@ -161,7 +158,7 @@ var NetworkOutSubCmd = models.Command{
 	ShortHelp: "Print service and environment transmitted network data metrics in your local time zone",
 	LongHelp: "`metrics network-out` prints out transmitted network metrics for your environment or individual services. " +
 		"You can print out metrics in csv, json, plain text, or spark lines format. " +
-		"If you want plain text format, simply omit the `--json`, `--csv`, and `--spark` flags. " +
+		"If you want plain text format, simply omit the `--json` and `--csv` flags. " +
 		"You can only stream metrics using plain text or spark lines formats. " +
 		"To print out metrics for every service in your environment, omit the `SERVICE_NAME` argument. " +
 		"Otherwise you may choose a service, such as an app service, to retrieve metrics for. " +
@@ -176,22 +173,21 @@ var NetworkOutSubCmd = models.Command{
 			json := subCmd.BoolOpt("json", false, "Output the data as json")
 			csv := subCmd.BoolOpt("csv", false, "Output the data as csv")
 			text := subCmd.BoolOpt("text", true, "Output the data in plain text")
-			spark := subCmd.BoolOpt("spark", false, "Output the data using spark lines")
 			stream := subCmd.BoolOpt("stream", false, "Repeat calls once per minute until this process is interrupted.")
 			mins := subCmd.IntOpt("m mins", 1, "How many minutes worth of metrics to retrieve.")
 			subCmd.Action = func() {
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdMetrics(*serviceName, NetworkOut, *json, *csv, *text, *spark, *stream, *mins, New(settings), services.New(settings))
+				err := CmdMetrics(*serviceName, NetworkOut, *json, *csv, *text, *stream, *mins, New(settings), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
 			}
-			subCmd.Spec = "[SERVICE_NAME] [(--json | --csv | --text | --spark)] [--stream] [-m]"
+			subCmd.Spec = "[SERVICE_NAME] [(--json | --csv | --text)] [--stream] [-m]"
 		}
 	},
 }

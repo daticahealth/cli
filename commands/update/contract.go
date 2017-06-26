@@ -32,6 +32,7 @@ var Cmd = models.Command{
 type IUpdate interface {
 	Check() (bool, error)
 	Update() error
+	UpdateEnvironments()
 	UpdatePods()
 }
 

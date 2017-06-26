@@ -16,23 +16,31 @@ func CmdDomain(envID string, ie environments.IEnvironments, is services.IService
 	if err != nil {
 		return err
 	}
-	serviceProxy, err := is.RetrieveByLabel("service_proxy")
+	domain, err := FindEnvironmentDomain(envID, env.Namespace, is, isites)
 	if err != nil {
 		return err
-	}
-	sites, err := isites.List(serviceProxy.ID)
-	if err != nil {
-		return err
-	}
-	domain := ""
-	for _, site := range *sites {
-		if strings.HasPrefix(site.Name, env.Namespace) {
-			domain = site.Name
-		}
 	}
 	if domain == "" {
 		return errors.New("Could not determine the temporary domain name of your environment")
 	}
 	logrus.Println(domain)
 	return nil
+}
+
+func FindEnvironmentDomain(envID string, namespace string, is services.IServices, isites sites.ISites) (string, error) {
+	serviceProxy, err := is.RetrieveByLabel("service_proxy")
+	if err != nil {
+		return "", err
+	}
+	sites, err := isites.List(serviceProxy.ID)
+	if err != nil {
+		return "", err
+	}
+	domain := ""
+	for _, site := range *sites {
+		if strings.HasPrefix(site.Name, namespace) {
+			domain = site.Name
+		}
+	}
+	return domain, nil
 }

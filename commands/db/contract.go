@@ -53,7 +53,7 @@ var BackupSubCmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdBackup(*databaseName, *skipPoll, New(settings, crypto.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
@@ -86,7 +86,7 @@ var DownloadSubCmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdDownload(*databaseName, *backupID, *filePath, *force, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings))
@@ -118,7 +118,7 @@ var ExportSubCmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdExport(*databaseName, *filePath, *force, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
@@ -156,7 +156,7 @@ var ImportSubCmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdImport(*databaseName, *filePath, *mongoCollection, *mongoDatabase, *skipBackup, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
@@ -184,7 +184,7 @@ var ListSubCmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdList(*databaseName, *page, *pageSize, New(settings, crypto.New(), jobs.New(settings)), services.New(settings))
@@ -211,7 +211,7 @@ var LogsSubCmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdLogs(*databaseName, *backupID, New(settings, crypto.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))

@@ -40,7 +40,7 @@ var AddSubCmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdAdd(*serviceName, *remote, *force, New(), services.New(settings))
@@ -67,7 +67,7 @@ var ShowSubCmd = models.Command{
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err := config.CheckRequiredAssociation(true, true, settings); err != nil {
+				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
 				err := CmdShow(*serviceName, services.New(settings))
@@ -83,6 +83,7 @@ var ShowSubCmd = models.Command{
 // IGit is an interface through which you can perform git operations
 type IGit interface {
 	Add(remote, gitURL string) error
+	Create() error
 	Exists() bool
 	List() ([]string, error)
 	Rm(remote string) error

@@ -3,8 +3,10 @@ package environments
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 	"testing"
 
+	"github.com/daticahealth/cli/models"
 	"github.com/daticahealth/cli/test"
 )
 
@@ -23,11 +25,29 @@ func TestList(t *testing.T) {
 		},
 	)
 
-	err := CmdList(New(settings))
+	err := CmdList(settings, New(settings))
 
 	// assert
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
+	}
+	// check that the local cache was updated
+	expected := map[string]models.AssociatedEnvV2{
+		test.EnvName: models.AssociatedEnvV2{
+			EnvironmentID: test.EnvID,
+			Name:          test.EnvName,
+			Pod:           test.Pod,
+			OrgID:         test.OrgID,
+		},
+		test.EnvNameAlt: models.AssociatedEnvV2{
+			EnvironmentID: test.EnvIDAlt,
+			Name:          test.EnvNameAlt,
+			Pod:           test.PodAlt,
+			OrgID:         test.OrgIDAlt,
+		},
+	}
+	if !reflect.DeepEqual(settings.Environments, expected) {
+		t.Fatalf("Environment cache differs. Expected %+v, actual %+v", expected, settings.Environments)
 	}
 }
 
@@ -42,7 +62,7 @@ func TestListWithPodError(t *testing.T) {
 		},
 	)
 
-	err := CmdList(New(settings))
+	err := CmdList(settings, New(settings))
 
 	// assert
 	if err != nil {

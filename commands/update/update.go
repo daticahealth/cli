@@ -6,6 +6,8 @@ import (
 
 	"github.com/Sirupsen/logrus"
 
+	"github.com/daticahealth/cli/commands/environments"
+	"github.com/daticahealth/cli/config"
 	"github.com/daticahealth/cli/lib/pods"
 	"github.com/daticahealth/cli/lib/updater"
 )
@@ -33,6 +35,7 @@ func CmdUpdate(iu IUpdate) error {
 		return err
 	}
 	iu.UpdatePods()
+	iu.UpdateEnvironments()
 	logrus.Printf("Your CLI has been updated to version %s", updater.AutoUpdater.Info.Version)
 	return nil
 }
@@ -66,4 +69,13 @@ func (u *SUpdate) UpdatePods() {
 	} else {
 		logrus.Debugf("Error listing pods: %s", err.Error())
 	}
+}
+
+// UpdateEnvironments retrieves all environments visible to the current user and stores them in the local cache.
+func (u *SUpdate) UpdateEnvironments() {
+	envs, errs := environments.New(u.Settings).List()
+	if errs != nil && len(errs) > 0 {
+		logrus.Debugf("Error listing environments: %+v", errs)
+	}
+	config.StoreEnvironments(envs, u.Settings)
 }

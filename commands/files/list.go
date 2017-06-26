@@ -18,7 +18,7 @@ func CmdList(svcName string, ifiles IFiles, is services.IServices) error {
 		return err
 	}
 	if service == nil {
-		return fmt.Errorf("Could not find a service with the label \"%s\". You can list services with the \"datica services\" command.", svcName)
+		return fmt.Errorf("Could not find a service with the label \"%s\". You can list services with the \"datica services list\" command.", svcName)
 	}
 	files, err := ifiles.List(service.ID)
 	if err != nil {

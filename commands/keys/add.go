@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
@@ -19,7 +20,11 @@ func CmdAdd(name, path string, ik IKeys, id deploykeys.IDeployKeys) error {
 	if strings.ContainsAny(name, config.InvalidChars) {
 		return fmt.Errorf("Invalid key name. Names must not contain the following characters: %s", config.InvalidChars)
 	}
-	fullPath, err := homedir.Expand(path)
+	homePath, err := homedir.Expand(path)
+	if err != nil {
+		return err
+	}
+	fullPath, err := filepath.Abs(homePath)
 	if err != nil {
 		return err
 	}
