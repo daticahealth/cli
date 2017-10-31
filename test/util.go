@@ -20,6 +20,8 @@ const (
 	SvcID     = "svc1"
 	SvcLabel  = "code1"
 
+	JobID = "00000000-0000-0000-0000-aaaaaaaaaaaa"
+
 	AliasAlt     = "2"
 	EnvIDAlt     = "env2"
 	EnvNameAlt   = "cli-tests2"

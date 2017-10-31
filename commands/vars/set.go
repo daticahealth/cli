@@ -49,7 +49,7 @@ func CmdSet(svcName string, variables []string, fileName string, iv IVars, is se
 	if err != nil {
 		return err
 	}
-	logrus.Printf("Set. For these environment variables to take effect, you will need to redeploy your service with \"datica redeploy%s\"", svcName)
+	logrus.Printf("Set. For these environment variables to take effect, you will need to redeploy your service with \"datica redeploy %s\"", svcName)
 	return nil
 }
 

@@ -117,7 +117,7 @@ var ScaleSubCmd = models.Command{
 		return func(subCmd *cli.Cmd) {
 			serviceName := subCmd.StringArg("SERVICE_NAME", "", "The name of the service running the workers")
 			target := subCmd.StringArg("TARGET", "", "The worker target to scale up or down")
-			scale := subCmd.StringArg("SCALE", "", "The new scale (or change in scale) for the given worker target. This can be a single value (i.e. 2) representing the final number of workers that should be running. Or this can be a change represented by a plus or minus sign followed by the value (i.e. +2 or -1). When using a change in value, be sure to insert the \"--\" operator to signal the end of options. For example, \"datica worker scale code-1 worker -- -1\"")
+			scale := subCmd.StringArg("SCALE", "", "The new scale (or change in scale) for the given worker target. This can be a single value (e.g. 2) representing the final number of workers that should be running. Or this can be a change represented by a plus or minus sign followed by the value (e.g. +2 or -1). When using a change in value, be sure to insert the \"--\" operator to signal the end of options. For example, \"datica worker scale code-1 worker -- -1\"")
 			subCmd.Action = func() {
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())

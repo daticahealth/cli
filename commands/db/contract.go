@@ -47,7 +47,7 @@ var BackupSubCmd = models.Command{
 		"```\ndatica -E \"<your_env_name>\" db backup db01\n```",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
-			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service to create a backup for (i.e. 'db01')")
+			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service to create a backup for (e.g. 'db01')")
 			skipPoll := subCmd.BoolOpt("s skip-poll", false, "Whether or not to wait for the backup to finish")
 			subCmd.Action = func() {
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
@@ -78,7 +78,7 @@ var DownloadSubCmd = models.Command{
 		"```\ndatica -E \"<your_env_name>\" db download db01 cd2b4bce-2727-42d1-89e0-027bf3f1a203 ./db.tar.gz\n```",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
-			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service which was backed up (i.e. 'db01')")
+			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service which was backed up (e.g. 'db01')")
 			backupID := subCmd.StringArg("BACKUP_ID", "", "The ID of the backup to download (found from \"datica backup list\")")
 			filePath := subCmd.StringArg("FILEPATH", "", "The location to save the downloaded backup to. This location must NOT already exist unless -f is specified")
 			force := subCmd.BoolOpt("f force", false, "If a file previously exists at \"filepath\", overwrite it and download the backup")
@@ -111,7 +111,7 @@ var ExportSubCmd = models.Command{
 		"```\ndatica -E \"<your_env_name>\" db export db01 ./dbexport.tar.gz\n```",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
-			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database to export data from (i.e. 'db01')")
+			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database to export data from (e.g. 'db01')")
 			filePath := subCmd.StringArg("FILEPATH", "", "The location to save the exported data. This location must NOT already exist unless -f is specified")
 			force := subCmd.BoolOpt("f force", false, "If a file previously exists at `filepath`, overwrite it and export data")
 			subCmd.Action = func() {
@@ -147,7 +147,7 @@ var ImportSubCmd = models.Command{
 		"```\ndatica -E \"<your_env_name>\" db import db01 ./db.sql\n```",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
-			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database to import data to (i.e. 'db01')")
+			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database to import data to (e.g. 'db01')")
 			filePath := subCmd.StringArg("FILEPATH", "", "The location of the file to import to the database")
 			mongoCollection := subCmd.StringOpt("c mongo-collection", "", "If importing into a mongo service, the name of the collection to import into")
 			mongoDatabase := subCmd.StringOpt("d mongo-database", "", "If importing into a mongo service, the name of the database to import into")
@@ -177,7 +177,7 @@ var ListSubCmd = models.Command{
 		"```\ndatica -E \"<your_env_name>\" db list db01\n```",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
-			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service to list backups for (i.e. 'db01')")
+			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service to list backups for (e.g. 'db01')")
 			page := subCmd.IntOpt("p page", 1, "The page to view")
 			pageSize := subCmd.IntOpt("n page-size", 10, "The number of items to show per page")
 			subCmd.Action = func() {
@@ -205,7 +205,7 @@ var LogsSubCmd = models.Command{
 		"```\ndatica -E \"<your_env_name>\" db logs db01 cd2b4bce-2727-42d1-89e0-027bf3f1a203\n```",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
-			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service (i.e. 'db01')")
+			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service (e.g. 'db01')")
 			backupID := subCmd.StringArg("BACKUP_ID", "", "The ID of the backup to download logs from (found from \"datica backup list\")")
 			subCmd.Action = func() {
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {

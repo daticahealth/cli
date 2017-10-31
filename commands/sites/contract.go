@@ -61,9 +61,9 @@ var CreateSubCmd = models.Command{
 		"datica -E \"<your_env_name>\" sites create app01.mysite.com app01 --lets-encrypt --enable-websockets\n```",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
-			name := subCmd.StringArg("SITE_NAME", "", "The name of the site to be created. This will be used in this site's nginx configuration file (i.e. \".example.com\")")
-			serviceName := subCmd.StringArg("SERVICE_NAME", "", "The name of the service to add this site configuration to (i.e. 'app01')")
-			certName := subCmd.StringArg("CERT_NAME", "", "The name of the cert created with the 'certs' command (i.e. \"star_example_com\")")
+			name := subCmd.StringArg("SITE_NAME", "", "The name of the site to be created. This will be used in this site's nginx configuration file (e.g. \".example.com\")")
+			serviceName := subCmd.StringArg("SERVICE_NAME", "", "The name of the service to add this site configuration to (e.g. 'app01')")
+			certName := subCmd.StringArg("CERT_NAME", "", "The name of the cert created with the 'certs' command (e.g. \"star_example_com\")")
 			clientMaxBodySize := subCmd.IntOpt("client-max-body-size", -1, "The 'client_max_body_size' nginx config specified in megabytes")
 			proxyConnectTimeout := subCmd.IntOpt("proxy-connect-timeout", -1, "The 'proxy_connect_timeout' nginx config specified in seconds")
 			proxyReadTimeout := subCmd.IntOpt("proxy-read-timeout", -1, "The 'proxy_read_timeout' nginx config specified in seconds")

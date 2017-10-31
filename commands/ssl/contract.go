@@ -75,7 +75,7 @@ var ResolveSubCmd = models.Command{
 		return func(subCmd *cli.Cmd) {
 			chain := subCmd.StringArg("CHAIN", "", "The path to your full certificate chain in PEM format")
 			privateKey := subCmd.StringArg("PRIVATE_KEY", "", "The path to your private key in PEM format")
-			hostname := subCmd.StringArg("HOSTNAME", "", "The hostname that should match your certificate (i.e. \"*.datica.com\")")
+			hostname := subCmd.StringArg("HOSTNAME", "", "The hostname that should match your certificate (e.g. \"*.datica.com\")")
 			output := subCmd.StringArg("OUTPUT", "", "The path of a file to save your properly resolved certificate chain (defaults to STDOUT)")
 			force := subCmd.BoolOpt("f force", false, "If an output file is specified and already exists, setting force to true will overwrite the existing output file")
 			subCmd.Action = func() {
@@ -120,7 +120,7 @@ var VerifySubCmd = models.Command{
 		return func(subCmd *cli.Cmd) {
 			chain := subCmd.StringArg("CHAIN", "", "The path to your full certificate chain in PEM format")
 			privateKey := subCmd.StringArg("PRIVATE_KEY", "", "The path to your private key in PEM format")
-			hostname := subCmd.StringArg("HOSTNAME", "", "The hostname that should match your certificate (i.e. \"*.datica.com\")")
+			hostname := subCmd.StringArg("HOSTNAME", "", "The hostname that should match your certificate (e.g. \"*.datica.com\")")
 			selfSigned := subCmd.BoolOpt("s self-signed", false, "Whether or not the certificate is self signed. If set, chain verification is skipped")
 			subCmd.Action = func() {
 				err := CmdVerify(*chain, *privateKey, *hostname, *selfSigned, New(settings))

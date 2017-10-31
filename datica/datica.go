@@ -11,6 +11,7 @@ import (
 	"github.com/daticahealth/cli/commands/clear"
 	"github.com/daticahealth/cli/commands/console"
 	"github.com/daticahealth/cli/commands/db"
+	"github.com/daticahealth/cli/commands/deploy"
 	"github.com/daticahealth/cli/commands/deploykeys"
 	"github.com/daticahealth/cli/commands/domain"
 	"github.com/daticahealth/cli/commands/environments"
@@ -18,6 +19,7 @@ import (
 	"github.com/daticahealth/cli/commands/git"
 	initcmd "github.com/daticahealth/cli/commands/init"
 	"github.com/daticahealth/cli/commands/invites"
+	"github.com/daticahealth/cli/commands/jobs"
 	"github.com/daticahealth/cli/commands/keys"
 	"github.com/daticahealth/cli/commands/logout"
 	"github.com/daticahealth/cli/commands/logs"
@@ -209,6 +211,7 @@ func InitCLI(app *cli.Cli, settings *models.Settings) {
 	app.CommandLong(clear.Cmd.Name, clear.Cmd.ShortHelp, clear.Cmd.LongHelp, clear.Cmd.CmdFunc(settings))
 	app.CommandLong(console.Cmd.Name, console.Cmd.ShortHelp, console.Cmd.LongHelp, console.Cmd.CmdFunc(settings))
 	app.CommandLong(db.Cmd.Name, db.Cmd.ShortHelp, db.Cmd.LongHelp, db.Cmd.CmdFunc(settings))
+	app.CommandLong(deploy.Cmd.Name, deploy.Cmd.ShortHelp, deploy.Cmd.LongHelp, deploy.Cmd.CmdFunc(settings))
 	app.CommandLong(deploykeys.Cmd.Name, deploykeys.Cmd.ShortHelp, deploykeys.Cmd.LongHelp, deploykeys.Cmd.CmdFunc(settings))
 	app.CommandLong(domain.Cmd.Name, domain.Cmd.ShortHelp, domain.Cmd.LongHelp, domain.Cmd.CmdFunc(settings))
 	app.CommandLong(environments.Cmd.Name, environments.Cmd.ShortHelp, environments.Cmd.LongHelp, environments.Cmd.CmdFunc(settings))
@@ -216,6 +219,7 @@ func InitCLI(app *cli.Cli, settings *models.Settings) {
 	app.CommandLong(git.Cmd.Name, git.Cmd.ShortHelp, git.Cmd.LongHelp, git.Cmd.CmdFunc(settings))
 	app.CommandLong(initcmd.Cmd.Name, initcmd.Cmd.ShortHelp, initcmd.Cmd.LongHelp, initcmd.Cmd.CmdFunc(settings))
 	app.CommandLong(invites.Cmd.Name, invites.Cmd.ShortHelp, invites.Cmd.LongHelp, invites.Cmd.CmdFunc(settings))
+	app.CommandLong(jobs.Cmd.Name, jobs.Cmd.ShortHelp, jobs.Cmd.LongHelp, jobs.Cmd.CmdFunc(settings))
 	app.CommandLong(keys.Cmd.Name, keys.Cmd.ShortHelp, keys.Cmd.LongHelp, keys.Cmd.CmdFunc(settings))
 	app.CommandLong(logout.Cmd.Name, logout.Cmd.ShortHelp, logout.Cmd.LongHelp, logout.Cmd.CmdFunc(settings))
 	app.CommandLong(logs.Cmd.Name, logs.Cmd.ShortHelp, logs.Cmd.LongHelp, logs.Cmd.CmdFunc(settings))

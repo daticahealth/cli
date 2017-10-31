@@ -27,7 +27,7 @@ var Cmd = models.Command{
 		"```\ndatica -E \"<your_env_name>\" redeploy app01\n```",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(cmd *cli.Cmd) {
-			serviceName := cmd.StringArg("SERVICE_NAME", "", "The name of the service to redeploy (i.e. 'app01')")
+			serviceName := cmd.StringArg("SERVICE_NAME", "", "The name of the service to redeploy (e.g. 'app01')")
 			cmd.Action = func() {
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
 					logrus.Fatal(err.Error())
