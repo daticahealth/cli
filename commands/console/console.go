@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"strings"
+	"syscall"
 
 	"golang.org/x/net/websocket"
 
@@ -47,6 +48,19 @@ func (c *SConsole) Open(command string, service *models.Service) error {
 	if err != nil {
 		return err
 	}
+
+	// If client kills console job before completion, destroy the job
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	go func() {
+		<-sigs
+		fmt.Println()
+		if err := c.Destroy(job.ID, service); err != nil {
+			logrus.Fatal(err)
+		}
+		os.Exit(0)
+	}()
+
 	// all because logrus treats print, println, and printf the same
 	logrus.StandardLogger().Out.Write([]byte(fmt.Sprintf("Waiting for the console (job ID = %s) to be ready. This might take a minute.", job.ID)))
 
@@ -99,6 +113,7 @@ func (c *SConsole) Open(command string, service *models.Service) error {
 	}
 	defer term.RestoreTerminal(fdIn, oldState)
 
+	signal.Stop(sigs)
 	signal.Notify(make(chan os.Signal, 1), os.Interrupt)
 
 	done := make(chan struct{}, 2)
