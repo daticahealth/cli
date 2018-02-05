@@ -35,6 +35,7 @@ import (
 	"github.com/docker/notary/trustmanager"
 	"github.com/docker/notary/trustpinning"
 	"github.com/docker/notary/tuf/data"
+	notaryUtils "github.com/docker/notary/tuf/utils"
 	"github.com/olekukonko/tablewriter"
 	digest "github.com/opencontainers/go-digest"
 )
@@ -169,8 +170,7 @@ func (d *SImages) Pull(name string, target *Target, user *models.User, env *mode
 
 // InitNotaryRepo intializes a notary repository
 func (d *SImages) InitNotaryRepo(repo notaryClient.Repository, rootKeyPath string) error {
-	rootTrustDir := fmt.Sprintf("%s/%s", userHomeDir(), trustPath)
-	if err := os.MkdirAll(rootTrustDir, 0700); err != nil {
+	if err := os.MkdirAll(RootTrustDir(), 0700); err != nil {
 		return err
 	}
 
@@ -300,9 +300,8 @@ func (d *SImages) GetNotaryRepository(pod, imageName string, user *models.User) 
 	if err != nil {
 		logrus.Fatalln(err)
 	}
-	rootTrustDir := fmt.Sprintf("%s/%s", userHomeDir(), trustPath)
 	repo, err := notaryClient.NewFileCachedRepository(
-		rootTrustDir,
+		RootTrustDir(),
 		data.GUN(imageName),
 		notaryServer,
 		transport,
@@ -362,6 +361,25 @@ func (d *SImages) GetGloballyUniqueNamespace(name string, env *models.Environmen
 		repositoryName = fmt.Sprintf("%s/%s", env.Namespace, repo)
 	}
 	return repositoryName, tag, nil
+}
+
+func (d *SImages) AddDelegation(repo notaryClient.Repository, certPath string, paths []string) error {
+	pubKeyBytes, err := ioutil.ReadFile(certPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("file for public key does not exist: %s", certPath)
+		}
+		return fmt.Errorf("unable to read public key from file: %s", certPath)
+	}
+	pubKey, err := notaryUtils.ParsePEMPublicKey(pubKeyBytes)
+	if err != nil {
+		return fmt.Errorf("unable to parse valid public key certificate from PEM file %s: %v", certPath, err)
+	}
+
+	if err := repo.AddDelegation("targets/releases", []data.PublicKey{pubKey}, paths); err != nil {
+		return err
+	}
+	return d.Publish(repo)
 }
 
 // Publish publishes changes to a repo
@@ -640,6 +658,10 @@ func (c credentials) RefreshToken(url *url.URL, service string) string {
 
 func (c credentials) SetRefreshToken(realm *url.URL, service, token string) {
 	c.refreshToken = token
+}
+
+func RootTrustDir() string {
+	return fmt.Sprintf("%s/%s", userHomeDir(), trustPath)
 }
 
 func userHomeDir() string {

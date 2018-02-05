@@ -3,6 +3,7 @@ package images
 import (
 	"github.com/Sirupsen/logrus"
 	"github.com/daticahealth/cli/commands/environments"
+	"github.com/daticahealth/cli/commands/images/delegations"
 	"github.com/daticahealth/cli/commands/images/tags"
 	"github.com/daticahealth/cli/commands/images/targets"
 	"github.com/daticahealth/cli/config"
@@ -27,6 +28,7 @@ var Cmd = models.Command{
 			cmd.CommandLong(pullCmd.Name, pullCmd.ShortHelp, pullCmd.LongHelp, pullCmd.CmdFunc(settings))
 			cmd.CommandLong(targets.Cmd.Name, targets.Cmd.ShortHelp, targets.Cmd.LongHelp, targets.Cmd.CmdFunc(settings))
 			cmd.CommandLong(tags.Cmd.Name, tags.Cmd.ShortHelp, tags.Cmd.LongHelp, tags.Cmd.CmdFunc(settings))
+			cmd.CommandLong(delegations.Cmd.Name, delegations.Cmd.ShortHelp, delegations.Cmd.LongHelp, delegations.Cmd.CmdFunc(settings))
 		}
 	},
 }

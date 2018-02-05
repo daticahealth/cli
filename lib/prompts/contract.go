@@ -159,9 +159,10 @@ func (p *SPrompts) GenericPrompt(msg, prompt string, validOptions []string) stri
 // CaptureInput prompts the user with the given msg and reads input until a newline is encountered. The input is
 // returned with newlines stripped. The prompt and the input will be on the same line when shown to the user.
 func (p *SPrompts) CaptureInput(msg string) string {
-	var answer string
 	fmt.Printf(msg)
-	fmt.Scanln(&answer)
-	fmt.Println("")
-	return answer
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		return scanner.Text()
+	}
+	return ""
 }

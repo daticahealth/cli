@@ -43,6 +43,7 @@ func CmdInit(settings *models.Settings, p prompts.IPrompts) error {
 	if len(*envs) > 1 {
 		for {
 			choice := p.CaptureInput("Enter your choice as a number: ")
+			fmt.Println("")
 			i, err := strconv.ParseUint(choice, 10, 64)
 			if err != nil || i == 0 || i > uint64(len(*envs)) {
 				logrus.Printf("%s is not a valid number", choice)
@@ -81,6 +82,7 @@ func CmdInit(settings *models.Settings, p prompts.IPrompts) error {
 	if len(codeServices) > 1 {
 		for {
 			choice := p.CaptureInput("Enter your choice as a number: ")
+			fmt.Println("")
 			i, err := strconv.ParseUint(choice, 10, 64)
 			if err != nil || i == 0 || i > uint64(len(codeServices)) {
 				logrus.Printf("%s is not a valid number", choice)
@@ -134,6 +136,7 @@ func CmdInit(settings *models.Settings, p prompts.IPrompts) error {
 		logrus.Println("You'll need to add an SSH key in order to push code.")
 		for {
 			keyPath := p.CaptureInput("Enter the path to your public SSH key (leave empty to skip): ")
+			fmt.Println("")
 			if keyPath == "" {
 				break
 			} else if _, err = os.Stat(keyPath); os.IsNotExist(err) {
