@@ -291,9 +291,10 @@ type PostInvite struct {
 }
 
 type Release struct {
-	Name      string `json:"release,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
-	Notes     string `json:"metadata,omitempty"`
+	Name       string `json:"release,omitempty"`
+	Repository string `json:"repository,omitempty"`
+	CreatedAt  string `json:"created_at,omitempty"`
+	Notes      string `json:"metadata,omitempty"`
 }
 
 // ReportedError is the standard error model sent back from the API
@@ -322,6 +323,7 @@ type Service struct {
 	LBIP           string            `json:"load_balancer_ip,omitempty"`
 	Scale          int               `json:"scale,omitempty"`
 	WorkerScale    int               `json:"worker_scale,omitempty"`
+	Image          string            `json:"docker_image,omitempty"`
 	ReleaseVersion string            `json:"release_version,omitempty"`
 	Redeployable   bool              `json:"redeployable,omitempty"`
 }
