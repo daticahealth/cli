@@ -178,7 +178,7 @@ func (d *SImages) InitNotaryRepo(repo notaryClient.Repository, rootKeyPath strin
 	if err != nil {
 		return err
 	}
-	if err = repo.Initialize(rootKeyIDs); err != nil {
+	if err = repo.Initialize(rootKeyIDs, data.CanonicalSnapshotRole); err != nil {
 		return err
 	}
 	return nil
