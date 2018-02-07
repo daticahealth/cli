@@ -3,6 +3,7 @@ package releases
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -50,8 +51,13 @@ func CmdList(svcName string, ir IReleases, is services.IServices) error {
 	data := [][]string{{"Release Name", "Created At", "Notes"}}
 	for _, r := range *rls {
 		name := r.Name
-		if r.Name == service.ReleaseVersion {
-			name = fmt.Sprintf("*%s", r.Name)
+		if service.Type == "container" {
+			repoParts := strings.SplitN(r.Repository, "/", 2)
+			image := repoParts[len(repoParts)-1]
+			name = fmt.Sprintf("%s:%s", image, name)
+		}
+		if r.Name == service.ReleaseVersion && r.Repository == service.Image {
+			name = fmt.Sprintf("*%s", name)
 		}
 		t, _ := time.Parse(dateForm, r.CreatedAt)
 		data = append(data, []string{name, t.Local().Format(time.ANSIC), r.Notes})
