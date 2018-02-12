@@ -15,7 +15,7 @@ func cmdDelegationsAdd(envID, image, certPath string, user *models.User, ie envi
 		return err
 	}
 
-	_, tag, err := ii.GetGloballyUniqueNamespace(image, env, true)
+	image, tag, err := ii.GetGloballyUniqueNamespace(image, env, true)
 	if err != nil {
 		return err
 	}
@@ -23,6 +23,8 @@ func cmdDelegationsAdd(envID, image, certPath string, user *models.User, ie envi
 		return fmt.Errorf("Cannot add signing priveledges for just one tag on an image")
 		//TODO: JK, you totally can. --all-paths in notary means you can sign any tag. Should determine how we want to do this
 	}
+
+	// TODO: add delegation cert to the repo
 
 	return nil
 }

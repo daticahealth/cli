@@ -20,19 +20,20 @@ var Cmd = models.Command{
 		"This command cannot be run directly, but has subcommands.",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(cmd *cli.Cmd) {
-			cmd.CommandLong(createCmd.Name, createCmd.ShortHelp, createCmd.LongHelp, createCmd.CmdFunc(settings))
+			cmd.CommandLong(generateCmd.Name, generateCmd.ShortHelp, generateCmd.LongHelp, generateCmd.CmdFunc(settings))
+			cmd.CommandLong(addCmd.Name, addCmd.ShortHelp, addCmd.LongHelp, addCmd.CmdFunc(settings))
 			// cmd.CommandLong(listCmd.Name, listCmd.ShortHelp, listCmd.LongHelp, listCmd.CmdFunc(settings))
 			// cmd.CommandLong(deleteCmd.Name, deleteCmd.ShortHelp, deleteCmd.LongHelp, deleteCmd.CmdFunc(settings))
 		}
 	},
 }
 
-var createCmd = models.Command{
-	Name:      "create",
-	ShortHelp: "Create a delegation key and certificate",
-	LongHelp: "<code>images delgations create</code> creates a delegation key and certificate to be addded to a trust repository for signing." +
+var generateCmd = models.Command{
+	Name:      "generate",
+	ShortHelp: "Generate a delegation key and certificate",
+	LongHelp: "<code>images delgations generate</code> creates a delegation key and certificate to be addded to a trust repository for signing." +
 		"The delegation certificate will expire after one year by default. You can create a new cert from the same key by specifying the --key option. Here is a sample command:\n\n" +
-		"<pre>\ndatica -E \"<your_env_name>\" images delegations create\n</pre>",
+		"<pre>\ndatica -E \"<your_env_name>\" images delegations generate\n</pre>",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(cmd *cli.Cmd) {
 			keyPath := cmd.StringOpt("--key", "", "Path to a premade key to use for creating a new public delegation certificate")
@@ -47,7 +48,7 @@ var createCmd = models.Command{
 				if err = config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				if err = cmdDelegationsCreate(settings.EnvironmentID, *keyPath, *size, *expiration, *importKey, environments.New(settings), images.New(settings), prompts.New()); err != nil {
+				if err = cmdDelegationsGenerate(settings.EnvironmentID, *keyPath, *size, *expiration, *importKey, environments.New(settings), images.New(settings), prompts.New()); err != nil {
 					logrus.Fatalln(err.Error())
 				}
 			}
