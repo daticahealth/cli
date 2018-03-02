@@ -32,7 +32,7 @@ func CmdCreate(name, serviceName, certName, downStreamService string, clientMaxB
 		certName = name
 	}
 
-	site, err := is.Create(name, certName, upstreamService.ID, serviceProxy.ID, generateSiteValues(clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout, proxySendTimeout, proxyUpstreamTimeout, enableCORS, enableWebSockets))
+	site, err := is.Create(name, certName, upstreamService.ID, serviceProxy.ID, generateSiteValues(clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout, proxySendTimeout, proxyUpstreamTimeout, enableCORS, enableWebSockets, name))
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ func (s *SSites) Create(name, cert, upstreamServiceID, svcID string, siteValues 
 	return &createdSite, nil
 }
 
-func generateSiteValues(clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout, proxySendTimeout, proxyUpstreamTimeout int, enableCORS, enableWebSockets bool) map[string]interface{} {
+func generateSiteValues(clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout, proxySendTimeout, proxyUpstreamTimeout int, enableCORS, enableWebSockets bool, name string) map[string]interface{} {
 	siteValues := map[string]interface{}{}
 	if clientMaxBodySize >= 0 {
 		siteValues["clientMaxBodySize"] = fmt.Sprintf("%dm", clientMaxBodySize)
@@ -83,7 +83,7 @@ func generateSiteValues(clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout
 		siteValues["proxyUpstreamTimeout"] = fmt.Sprintf("%ds", proxyUpstreamTimeout)
 	}
 	if enableCORS {
-		siteValues["enableCORS"] = true
+		siteValues["enableCORSSites"] = name
 	}
 	if enableWebSockets {
 		siteValues["enableWebSockets"] = true
