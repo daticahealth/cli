@@ -3,6 +3,7 @@ package sites
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/daticahealth/cli/commands/certs"
@@ -83,7 +84,7 @@ func generateSiteValues(clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout
 		siteValues["proxyUpstreamTimeout"] = fmt.Sprintf("%ds", proxyUpstreamTimeout)
 	}
 	if enableCORS {
-		siteValues["enableCORSSites"] = name
+		siteValues["enableCORSSites"] = strings.Replace(name, ".", "\\.", -1)
 	}
 	if enableWebSockets {
 		siteValues["enableWebSockets"] = true
