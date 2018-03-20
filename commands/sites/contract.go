@@ -48,7 +48,7 @@ var CreateSubCmd = models.Command{
 		"proxy_set_header Connection \"upgrade\";\n</pre>\n\n" +
 		"Here are some sample commands\n\n" +
 		"<pre>\ndatica -E \"<your_env_name>\" sites create .mysite.com app01 wildcard_mysitecom\n" +
-		"datica -E \"<your_env_name>\" sites create .mysite.com app01 wildcard_mysitecom --client-max-body-size 50 --enable-cors\n" +
+		"datica -E \"<your_env_name>\" sites create .mysite.com app01 wildcard_mysitecom --client-max-body-size 50 --enable-cors=www.mysite.com,mysite.com,api.mysite.com\n" +
 		"datica -E \"<your_env_name>\" sites create app01.mysite.com app01 --lets-encrypt --enable-websockets\n</pre>",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
@@ -61,7 +61,7 @@ var CreateSubCmd = models.Command{
 			proxyReadTimeout := subCmd.IntOpt("proxy-read-timeout", -1, "The 'proxy_read_timeout' nginx config specified in seconds")
 			proxySendTimeout := subCmd.IntOpt("proxy-send-timeout", -1, "The 'proxy_send_timeout' nginx config specified in seconds")
 			proxyUpstreamTimeout := subCmd.IntOpt("proxy-upstream-timeout", -1, "The 'proxy_next_upstream_timeout' nginx config specified in seconds")
-			enableCORS := subCmd.StringOpt("enable-cors", "", "Enable or disable CORS support for specific sites")
+			enableCORS := subCmd.StringOpt("enable-cors", "", "Enable or disable CORS support for specific sites (in a comma-delimited list)")
 			enableWebSockets := subCmd.BoolOpt("enable-websockets", false, "Enable or disable all features related to full websockets support")
 			letsEncrypt := subCmd.BoolOpt("l lets-encrypt", false, "Whether or not this site should create an auto-renewing Let's Encrypt certificate")
 			subCmd.Action = func() {
