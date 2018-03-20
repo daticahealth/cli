@@ -11,7 +11,7 @@ import (
 	"github.com/daticahealth/cli/models"
 )
 
-func CmdCreate(name, serviceName, certName, downStreamService string, clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout, proxySendTimeout, proxyUpstreamTimeout int, enableCORS, enableWebSockets, letsEncrypt bool, is ISites, ic certs.ICerts, iservices services.IServices) error {
+func CmdCreate(name, serviceName, certName, downStreamService string, clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout, proxySendTimeout, proxyUpstreamTimeout int, enableCORS string, enableWebSockets, letsEncrypt bool, is ISites, ic certs.ICerts, iservices services.IServices) error {
 	upstreamService, err := iservices.RetrieveByLabel(serviceName)
 	if err != nil {
 		return err
@@ -33,7 +33,7 @@ func CmdCreate(name, serviceName, certName, downStreamService string, clientMaxB
 		certName = name
 	}
 
-	site, err := is.Create(name, certName, upstreamService.ID, serviceProxy.ID, generateSiteValues(clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout, proxySendTimeout, proxyUpstreamTimeout, enableCORS, enableWebSockets, name))
+	site, err := is.Create(name, certName, upstreamService.ID, serviceProxy.ID, generateSiteValues(clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout, proxySendTimeout, proxyUpstreamTimeout, enableCORS, enableWebSockets))
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (s *SSites) Create(name, cert, upstreamServiceID, svcID string, siteValues 
 	return &createdSite, nil
 }
 
-func generateSiteValues(clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout, proxySendTimeout, proxyUpstreamTimeout int, enableCORS, enableWebSockets bool, name string) map[string]interface{} {
+func generateSiteValues(clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout, proxySendTimeout, proxyUpstreamTimeout int, enableCORS string, enableWebSockets bool) map[string]interface{} {
 	siteValues := map[string]interface{}{}
 	if clientMaxBodySize >= 0 {
 		siteValues["clientMaxBodySize"] = fmt.Sprintf("%dm", clientMaxBodySize)
@@ -83,8 +83,15 @@ func generateSiteValues(clientMaxBodySize, proxyConnectTimeout, proxyReadTimeout
 	if proxyUpstreamTimeout >= 0 {
 		siteValues["proxyUpstreamTimeout"] = fmt.Sprintf("%ds", proxyUpstreamTimeout)
 	}
-	if enableCORS {
-		siteValues["enableCORSSites"] = strings.Replace(name, ".", "\\.", -1)
+	if len(enableCORS) > 0 {
+		var sites []string
+		for _, site := range strings.Split(enableCORS, ",") {
+			site = strings.TrimSpace(site)
+			if len(site) > 0 {
+				sites = append(sites, strings.Replace(site, ".", "\\.", -1))
+			}
+		}
+		siteValues["enableCORSSites"] = strings.Join(sites, "|")
 	}
 	if enableWebSockets {
 		siteValues["enableWebSockets"] = true
