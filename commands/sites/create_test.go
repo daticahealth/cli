@@ -23,16 +23,16 @@ var createTests = []struct {
 	proxyReadTimeout     int
 	proxySendTimeout     int
 	proxyUpstreamTimeout int
-	enableCORS           bool
+	enableCORS           string
 	enableWebSockets     bool
 	letsEncrypt          bool
 	expectErr            bool
 }{
-	{"test.example.com", test.SvcLabel, "test_example_com", test.DownStream, -1, -1, -1, -1, -1, false, false, false, false},
-	{"test.example.com", test.SvcLabel, "test_example_com", test.DownStream, -1, -1, -1, -1, -1, false, false, true, false},
-	{"test.example.com", test.SvcLabel, "test_example_com", test.DownStream, 1, 2, 3, 4, 5, true, true, false, false},
-	{"test.example.com", test.SvcLabel, "test_example_com", test.DownStream, 1, 2, 3, 4, 5, true, true, true, false},
-	{"test.example.com", "code-invalid", "test_example_com", test.DownStream, 1, 2, 3, 4, 5, true, true, false, true},
+	{"test.example.com", test.SvcLabel, "test_example_com", test.DownStream, -1, -1, -1, -1, -1, "", false, false, false},
+	{"test.example.com", test.SvcLabel, "test_example_com", test.DownStream, -1, -1, -1, -1, -1, "", false, true, false},
+	{"test.example.com", test.SvcLabel, "test_example_com", test.DownStream, 1, 2, 3, 4, 5, "test.example.com", true, false, false},
+	{"test.example.com", test.SvcLabel, "test_example_com", test.DownStream, 1, 2, 3, 4, 5, "test.example.com", true, true, false},
+	{"test.example.com", "code-invalid", "test_example_com", test.DownStream, 1, 2, 3, 4, 5, "test.example.com", true, false, true},
 }
 
 func TestCreate(t *testing.T) {
