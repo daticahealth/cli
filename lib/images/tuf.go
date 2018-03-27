@@ -164,7 +164,25 @@ func (d *SImages) Pull(name string, target *Target, user *models.User, env *mode
 		return err
 	}
 	defer resp.Close()
-	return jsonmessage.DisplayJSONMessagesStream(resp, os.Stdout, os.Stdout.Fd(), true, nil)
+	err = jsonmessage.DisplayJSONMessagesStream(resp, os.Stdout, os.Stdout.Fd(), true, nil)
+	if err != nil {
+		return err
+	}
+	options := types.ImageListOptions{
+		Filters: filters.NewArgs(filters.Arg("dangling", "true"), filters.Arg("reference", ref)),
+	}
+	images, err := dockerCli.ImageList(ctx, options)
+	if err != nil {
+		return err
+	}
+	if len(images) > 0 {
+		taggedImage := fmt.Sprintf("%s:%s", name, target.Name)
+		logrus.Printf("Tagging image %s as %s", ref, taggedImage)
+		if err := dockerCli.ImageTag(ctx, images[0].ID, taggedImage); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // InitNotaryRepo intializes a notary repository
