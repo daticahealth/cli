@@ -42,22 +42,13 @@ var CreateSubCmd = models.Command{
 		"The service is a code service that will use this site configuration. " +
 		"Lastly, the cert instance must be specified by the <code>CERT_NAME</code> argument used in the certs create command or by the \"-l\" flag indicating a new Let's Encrypt certificate should be created. " +
 		"You can also set Nginx configuration values directly by specifying one of the above flags. " +
-		"Specifying <code>--enable-cors</code> will add the following lines to your Nginx configuration\n\n" +
-		"<pre>\nadd_header 'Access-Control-Allow-Origin' '$http_origin' always;\n" +
-		"add_header 'Access-Control-Allow-Credentials' 'true' always;\n" +
-		"add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS, DELETE, PUT, HEAD, PATCH' always;\n" +
-		"add_header 'Access-Control-Allow-Headers' 'DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Accept,Authorization' always;\n" +
-		"add_header 'Access-Control-Max-Age' 1728000 always;\n" +
-		"if ($request_method = 'OPTIONS') {\n" +
-		"  return 204;\n" +
-		"}\n</pre>\n\n" +
 		"Specifying <code>--enable-websockets</code> will add the following lines to your Nginx configuration\n\n" +
 		"<pre>\nproxy_http_version 1.1;\n" +
 		"proxy_set_header Upgrade $http_upgrade;\n" +
 		"proxy_set_header Connection \"upgrade\";\n</pre>\n\n" +
 		"Here are some sample commands\n\n" +
 		"<pre>\ndatica -E \"<your_env_name>\" sites create .mysite.com app01 wildcard_mysitecom\n" +
-		"datica -E \"<your_env_name>\" sites create .mysite.com app01 wildcard_mysitecom --client-max-body-size 50 --enable-cors\n" +
+		"datica -E \"<your_env_name>\" sites create .mysite.com app01 wildcard_mysitecom --client-max-body-size 50 --enable-cors=www.mysite.com,mysite.com,api.mysite.com\n" +
 		"datica -E \"<your_env_name>\" sites create app01.mysite.com app01 --lets-encrypt --enable-websockets\n</pre>",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
@@ -70,7 +61,7 @@ var CreateSubCmd = models.Command{
 			proxyReadTimeout := subCmd.IntOpt("proxy-read-timeout", -1, "The 'proxy_read_timeout' nginx config specified in seconds")
 			proxySendTimeout := subCmd.IntOpt("proxy-send-timeout", -1, "The 'proxy_send_timeout' nginx config specified in seconds")
 			proxyUpstreamTimeout := subCmd.IntOpt("proxy-upstream-timeout", -1, "The 'proxy_next_upstream_timeout' nginx config specified in seconds")
-			enableCORS := subCmd.BoolOpt("enable-cors", false, "Enable or disable all features related to full CORS support")
+			enableCORS := subCmd.StringOpt("enable-cors", "", "Enable or disable CORS support for specific sites (in a comma-delimited list)")
 			enableWebSockets := subCmd.BoolOpt("enable-websockets", false, "Enable or disable all features related to full websockets support")
 			letsEncrypt := subCmd.BoolOpt("l lets-encrypt", false, "Whether or not this site should create an auto-renewing Let's Encrypt certificate")
 			subCmd.Action = func() {
