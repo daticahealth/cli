@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/daticahealth/cli/commands/services"
@@ -128,7 +127,9 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		options["database"] = mongoDatabase
 	}
 
-	uploadID, err := d.InitiateMultiPartUpload(service)
+	fileName := "create_a_random_filename_here"
+
+	uploadID, err := d.InitiateMultiPartUpload(service, &fileName)
 
 	// Check if the service the data will be imported to has a volume large enough for the amount of data (should be done before encryption)
 
@@ -170,7 +171,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 	for key, value := range options {
 		importParams[key] = value
 	}
-	importParams["filename"] = strings.TrimLeft(u.Path, "/")
+	importParams["filename"] = fileName
 	importParams["encryptionKey"] = string(d.Crypto.Hex(key, crypto.KeySize*2))
 	importParams["encryptionIV"] = string(d.Crypto.Hex(iv, crypto.IVSize*2))
 	importParams["dropDatabase"] = false
@@ -192,7 +193,8 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 	return &job, nil
 }
 
-func (d *SDb) InitiateMultiPartUpload(service *models.Service) (*string, error) {
+// The following three methods should be consolidated to call a single method with parameters for the differences
+func (d *SDb) InitiateMultiPartUpload(service *models.Service, fileName *string) (*string, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
 	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/initiate_upload", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
 	if err != nil {
