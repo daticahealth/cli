@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
-	"net/url"
 	"os"
 
 	"github.com/Sirupsen/logrus"
@@ -140,10 +139,6 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		if err != nil {
 			return nil, err
 		}
-		u, err := url.Parse(tmpURL.URL)
-		if err != nil {
-			return nil, err
-		}
 		chunkRT := transfer.NewReaderTransfer(rt, int(fiveGB))
 		req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
 		req.ContentLength = int64(chunkRT.Length())
@@ -165,7 +160,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		done <- true
 	}
 
-	uploadComplete, err := d.CompleteMultiPartUpload(service)
+	_, err = d.CompleteMultiPartUpload(service)
 
 	importParams := map[string]interface{}{}
 	for key, value := range options {
@@ -200,20 +195,6 @@ func (d *SDb) InitiateMultiPartUpload(service *models.Service, fileName *string)
 	if err != nil {
 		return nil, err
 	}
-	var fileName string
-	err = d.Settings.HTTPManager.ConvertResp(resp, statusCode, &fileName)
-	if err != nil {
-		return nil, err
-	}
-	return &fileName, nil
-}
-
-func (d *SDb) CompleteMultiPartUpload(service *models.Service) (*string, error) {
-	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
-	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/complete_upload", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
-	if err != nil {
-		return nil, err
-	}
 	var uploadID string
 	err = d.Settings.HTTPManager.ConvertResp(resp, statusCode, &uploadID)
 	if err != nil {
@@ -222,9 +203,23 @@ func (d *SDb) CompleteMultiPartUpload(service *models.Service) (*string, error) 
 	return &uploadID, nil
 }
 
+func (d *SDb) CompleteMultiPartUpload(service *models.Service) (*string, error) {
+	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
+	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/complete_upload", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
+	if err != nil {
+		return nil, err
+	}
+	var location string
+	err = d.Settings.HTTPManager.ConvertResp(resp, statusCode, &location)
+	if err != nil {
+		return nil, err
+	}
+	return &location, nil
+}
+
 func (d *SDb) TempUploadURL(service *models.Service, uploadID *string) (*models.TempURL, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
-	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/restore-url", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
+	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/multipart-url", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
 	if err != nil {
 		return nil, err
 	}
