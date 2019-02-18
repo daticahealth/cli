@@ -82,10 +82,22 @@ func TestDbImport(t *testing.T) {
 			fmt.Fprint(w, fmt.Sprintf(`{"url":"%s/logs"}`, baseURL.String()))
 		},
 	)
-	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/restore-url",
+	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/initiate-multipart-upload",
+		func(w http.ResponseWriter, r *http.Request) {
+			test.AssertEquals(t, r.Method, "GET")
+			fmt.Fprint(w, fmt.Sprintf(`{"upload_id":"upload_id","file_name": "%s"}`, importFilePath))
+		},
+	)
+	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/multipart-upload-url",
 		func(w http.ResponseWriter, r *http.Request) {
 			test.AssertEquals(t, r.Method, "GET")
 			fmt.Fprint(w, fmt.Sprintf(`{"url":"%s/restore"}`, baseURL.String()))
+		},
+	)
+	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/complete-multipart-upload",
+		func(w http.ResponseWriter, r *http.Request) {
+			test.AssertEquals(t, r.Method, "GET")
+			fmt.Fprint(w, fmt.Sprintf(`{"location":"location"}`))
 		},
 	)
 	mux.HandleFunc("/restore",
@@ -177,10 +189,22 @@ func TestDbImportOverFiveGB(t *testing.T) {
 			fmt.Fprint(w, fmt.Sprintf(`{"url":"%s/logs"}`, baseURL.String()))
 		},
 	)
-	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/restore-url",
+	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/initiate-multipart-upload",
+		func(w http.ResponseWriter, r *http.Request) {
+			test.AssertEquals(t, r.Method, "GET")
+			fmt.Fprint(w, fmt.Sprintf(`{"upload_id":"upload_id","file_name": "%s"}`, importFilePath))
+		},
+	)
+	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/multipart-upload-url",
 		func(w http.ResponseWriter, r *http.Request) {
 			test.AssertEquals(t, r.Method, "GET")
 			fmt.Fprint(w, fmt.Sprintf(`{"url":"%s/restore"}`, baseURL.String()))
+		},
+	)
+	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/complete-multipart-upload",
+		func(w http.ResponseWriter, r *http.Request) {
+			test.AssertEquals(t, r.Method, "GET")
+			fmt.Fprint(w, fmt.Sprintf(`{"location":"location"}`))
 		},
 	)
 	mux.HandleFunc("/restore",
@@ -239,10 +263,22 @@ func TestDbImportFailedUpload(t *testing.T) {
 			fmt.Fprint(w, fmt.Sprintf(`{"id":"%s","type":"restore","status":"running","restore":{"keyLogs":"0000000000000000000000000000000000000000000000000000000000000000","iv":"000000000000000000000000"}}`, dbImportID))
 		},
 	)
-	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/restore-url",
+	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/initiate-multipart-upload",
+		func(w http.ResponseWriter, r *http.Request) {
+			test.AssertEquals(t, r.Method, "GET")
+			fmt.Fprint(w, fmt.Sprintf(`{"upload_id":"upload_id","file_name": "%s"}`, importFilePath))
+		},
+	)
+	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/multipart-upload-url",
 		func(w http.ResponseWriter, r *http.Request) {
 			test.AssertEquals(t, r.Method, "GET")
 			fmt.Fprint(w, fmt.Sprintf(`{"url":"%s/restore"}`, baseURL.String()))
+		},
+	)
+	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/complete-multipart-upload",
+		func(w http.ResponseWriter, r *http.Request) {
+			test.AssertEquals(t, r.Method, "GET")
+			fmt.Fprint(w, fmt.Sprintf(`{"location":"location"}`))
 		},
 	)
 	mux.HandleFunc("/restore",
@@ -250,7 +286,7 @@ func TestDbImportFailedUpload(t *testing.T) {
 			test.AssertEquals(t, r.Method, "PUT")
 			ioutil.ReadAll(r.Body)
 			r.Body.Close()
-			w.WriteHeader(400)
+			w.WriteHeader(200)
 		},
 	)
 

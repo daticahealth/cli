@@ -131,32 +131,37 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 
 	// Check if the service the data will be imported to has a volume large enough for the amount of data (should be done before encryption)
 
-	fiveGB := transfer.GB * 5
-	numChunks := int(math.Ceil(float64(rt.Length() / fiveGB)))
+	chunkSize := transfer.MB * 100
+	numChunks := int(math.Ceil(float64(rt.Length() / chunkSize)))
 	for i := 0; i < numChunks; i++ {
 		tmpURL, err := d.TempUploadURL(service, strconv.Itoa(i), uploadID)
 		if err != nil {
 			return nil, err
 		}
-		chunkRT := transfer.NewReaderTransfer(rt, int(fiveGB))
+		var chunkRT *transfer.ReaderTransfer
+		if i == numChunks-1 {
+			chunkRT = transfer.NewReaderTransfer(rt, int(rt.Length())-int(rt.Transferred()))
+		} else {
+			chunkRT = transfer.NewReaderTransfer(rt, int(chunkSize))
+		}
 		req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
 		req.ContentLength = int64(chunkRT.Length())
-		done := make(chan bool)
-		go printTransferStatus(false, chunkRT, done)
+		// done := make(chan bool)
+		// go printTransferStatus(false, chunkRT, done)
 		uploadResp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			done <- false
+			// done <- false
 			return nil, err
 		}
 		defer uploadResp.Body.Close()
 		if uploadResp.StatusCode != 200 {
 			// add in retry logic?
-			done <- false
+			// done <- false
 			b, err := ioutil.ReadAll(uploadResp.Body)
 			logrus.Debugf("Error uploading import file: %d %s %s", uploadResp.StatusCode, string(b), err)
 			return nil, fmt.Errorf("Failed to upload import file - received status code %d", uploadResp.StatusCode)
 		}
-		done <- true
+		// done <- true
 	}
 
 	_, err = d.CompleteMultiPartUpload(service)
@@ -219,7 +224,7 @@ func (d *SDb) CompleteMultiPartUpload(service *models.Service) (string, error) {
 
 func (d *SDb) TempUploadURL(service *models.Service, partNumber string, uploadID string) (*models.TempURL, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
-	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/multipart-upload-url?partNumber="+partNumber+"&uploadId="+uploadId, d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
+	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/multipart-upload-url?partNumber="+partNumber+"&uploadId="+uploadID, d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
 	if err != nil {
 		return nil, err
 	}
