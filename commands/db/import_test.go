@@ -84,7 +84,7 @@ func TestDbImport(t *testing.T) {
 	)
 	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/initiate-multipart-upload",
 		func(w http.ResponseWriter, r *http.Request) {
-			test.AssertEquals(t, r.Method, "GET")
+			test.AssertEquals(t, r.Method, "POST")
 			fmt.Fprint(w, fmt.Sprintf(`{"upload_id":"upload_id","file_name": "%s"}`, importFilePath))
 		},
 	)
@@ -96,7 +96,7 @@ func TestDbImport(t *testing.T) {
 	)
 	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/complete-multipart-upload",
 		func(w http.ResponseWriter, r *http.Request) {
-			test.AssertEquals(t, r.Method, "GET")
+			test.AssertEquals(t, r.Method, "POST")
 			fmt.Fprint(w, fmt.Sprintf(`{"location":"location"}`))
 		},
 	)
@@ -139,8 +139,8 @@ func TestDbImport(t *testing.T) {
 }
 
 func TestDbImportOverFiveGB(t *testing.T) {
-	data := make([]byte, 5368709130)
-	ioutil.WriteFile(importFilePath, data, 0644)
+	requestData := make([]byte, 5368709130)
+	ioutil.WriteFile(importFilePath, requestData, 0644)
 	mux, server, baseURL := test.Setup()
 	defer test.Teardown(server)
 	settings := test.GetSettings(baseURL.String())

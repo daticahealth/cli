@@ -128,18 +128,21 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		options["database"] = mongoDatabase
 	}
 
-	uploadID, fileName, err := d.InitiateMultiPartUpload(service)
-
+	uploadInfo, err := d.InitiateMultiPartUpload(service)
+	if err != nil {
+		return nil, err
+	}
 	// Check if the service the data will be imported to has a volume large enough for the amount of data (should be done before encryption)
 
 	chunkSize := transfer.MB * 100
 	numChunks := int(math.Ceil(float64(rt.Length() / chunkSize)))
-	for i := 0; i < numChunks; i++ {
-		tmpURL, err := d.TempUploadURL(service, strconv.Itoa(i), uploadID)
+	for i := 1; i <= numChunks; i++ {
+		tmpURL, err := d.TempUploadURL(service, uploadInfo.FileName, strconv.Itoa(i), uploadInfo.UploadID)
+
 		if err != nil {
 			return nil, err
 		}
-		if i == numChunks-1 {
+		if i == numChunks {
 			chunkSize = (transfer.ByteSize)(int(rt.Length()) - int(rt.Transferred()))
 		}
 
@@ -171,7 +174,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 	for key, value := range options {
 		importParams[key] = value
 	}
-	importParams["filename"] = fileName
+	importParams["filename"] = uploadInfo.FileName
 	importParams["encryptionKey"] = string(d.Crypto.Hex(key, crypto.KeySize*2))
 	importParams["encryptionIV"] = string(d.Crypto.Hex(iv, crypto.IVSize*2))
 	importParams["dropDatabase"] = false
@@ -194,38 +197,38 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 }
 
 // The following three methods should be consolidated to call a single method with parameters for the differences
-func (d *SDb) InitiateMultiPartUpload(service *models.Service) (string, string, error) {
+func (d *SDb) InitiateMultiPartUpload(service *models.Service) (*models.MultipartUploadInfo, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
-	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/initiate_upload", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
+	resp, statusCode, err := d.Settings.HTTPManager.Post(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/initiate-multipart-upload", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
-	var fileName, uploadID string
+	var uploadInfo models.MultipartUploadInfo
 	// parse out file name and upload id
-	err = d.Settings.HTTPManager.ConvertResp(resp, statusCode, &uploadID)
+	err = d.Settings.HTTPManager.ConvertResp(resp, statusCode, &uploadInfo)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
-	return fileName, uploadID, nil
+	return &uploadInfo, nil
 }
 
-func (d *SDb) CompleteMultiPartUpload(service *models.Service) (string, error) {
+func (d *SDb) CompleteMultiPartUpload(service *models.Service) (*models.Location, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
-	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/complete_upload", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
+	resp, statusCode, err := d.Settings.HTTPManager.Post(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/complete-multipart-upload", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var location string
+	var location models.Location
 	err = d.Settings.HTTPManager.ConvertResp(resp, statusCode, &location)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return location, nil
+	return &location, nil
 }
 
-func (d *SDb) TempUploadURL(service *models.Service, partNumber string, uploadID string) (*models.TempURL, error) {
+func (d *SDb) TempUploadURL(service *models.Service, fileName string, partNumber string, uploadID string) (*models.TempURL, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
-	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/multipart-upload-url?partNumber="+partNumber+"&uploadId="+uploadID, d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
+	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/multipart-upload-url?fileName="+fileName+"&partNumber="+partNumber+"&uploadId="+uploadID, d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
 	if err != nil {
 		return nil, err
 	}
