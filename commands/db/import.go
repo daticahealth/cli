@@ -147,22 +147,22 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 
 		req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
 		req.ContentLength = int64(chunkRT.Length())
-		// done := make(chan bool)
-		// go printTransferStatus(false, chunkRT, done)
+		done := make(chan bool)
+		go printTransferStatus(false, chunkRT, done)
 		uploadResp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			// done <- false
+			done <- false
 			return nil, err
 		}
 		defer uploadResp.Body.Close()
 		if uploadResp.StatusCode != 200 {
 			// add in retry logic?
-			// done <- false
+			done <- false
 			b, err := ioutil.ReadAll(uploadResp.Body)
 			logrus.Debugf("Error uploading import file: %d %s %s", uploadResp.StatusCode, string(b), err)
 			return nil, fmt.Errorf("Failed to upload import file - received status code %d", uploadResp.StatusCode)
 		}
-		// done <- true
+		done <- true
 	}
 
 	_, err = d.CompleteMultiPartUpload(service)
