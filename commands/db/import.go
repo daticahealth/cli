@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -138,12 +139,12 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		if err != nil {
 			return nil, err
 		}
-		var chunkRT *transfer.ReaderTransfer
 		if i == numChunks-1 {
-			chunkRT = transfer.NewReaderTransfer(rt, int(rt.Length())-int(rt.Transferred()))
-		} else {
-			chunkRT = transfer.NewReaderTransfer(rt, int(chunkSize))
+			chunkSize = (transfer.ByteSize)(int(rt.Length()) - int(rt.Transferred()))
 		}
+
+		chunkRT := transfer.NewReaderTransfer(io.LimitReader(rt, int64(chunkSize)), int(chunkSize))
+
 		req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
 		req.ContentLength = int64(chunkRT.Length())
 		// done := make(chan bool)
