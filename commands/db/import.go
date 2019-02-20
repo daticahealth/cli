@@ -137,6 +137,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 
 	chunkSize := transfer.MB * 100
 	numChunks := int(math.Ceil(float64(rt.Length() / chunkSize)))
+	parts := []map[string]interface{}{}
 	for i := 1; i <= numChunks; i++ {
 		tmpURL, err := d.TempUploadURL(service, uploadInfo.FileName, strconv.Itoa(i), uploadInfo.UploadID)
 		if err != nil {
@@ -165,10 +166,15 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 			logrus.Debugf("Error uploading import file: %d %s %s", uploadResp.StatusCode, string(b), err)
 			return nil, fmt.Errorf("Failed to upload import file - received status code %d", uploadResp.StatusCode)
 		}
+		etag := uploadResp.Header.Get("ETag")
+		parts = append(parts, map[string]interface{}{
+			"ETag":       etag,
+			"PartNumber": i,
+		})
 		done <- true
 	}
 
-	_, err = d.CompleteMultiPartUpload(service)
+	_, err = d.CompleteMultiPartUpload(service, uploadInfo.FileName, uploadInfo.UploadID, parts)
 	// retry logic here too? at this point, all parts have been uploaded
 	if err != nil {
 		return nil, fmt.Errorf("Failed to complete upload - %s", err)
@@ -215,9 +221,13 @@ func (d *SDb) InitiateMultiPartUpload(service *models.Service) (*models.Multipar
 	return &uploadInfo, nil
 }
 
-func (d *SDb) CompleteMultiPartUpload(service *models.Service) (*models.Location, error) {
+func (d *SDb) CompleteMultiPartUpload(service *models.Service, fileName string, uploadID string, parts []map[string]interface{}) (*models.Location, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
-	resp, statusCode, err := d.Settings.HTTPManager.Post(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/complete-multipart-upload", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
+	body, err := json.Marshal(parts)
+	if err != nil {
+		return nil, err
+	}
+	resp, statusCode, err := d.Settings.HTTPManager.Post(body, fmt.Sprintf("%s%s/environments/%s/services/%s/complete-multipart-upload?fileName="+fileName+"&uploadId="+uploadID, d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
 	if err != nil {
 		return nil, err
 	}
