@@ -128,24 +128,24 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		options["database"] = mongoDatabase
 	}
 
+	// Check if the service the data will be imported to has a volume large enough for the amount of data (should be done before encryption)
+
 	uploadInfo, err := d.InitiateMultiPartUpload(service)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to intiate upload - %s", err)
 	}
-	// Check if the service the data will be imported to has a volume large enough for the amount of data (should be done before encryption)
 
 	chunkSize := transfer.MB * 100
 	numChunks := int(math.Ceil(float64(rt.Length() / chunkSize)))
 	for i := 1; i <= numChunks; i++ {
 		tmpURL, err := d.TempUploadURL(service, uploadInfo.FileName, strconv.Itoa(i), uploadInfo.UploadID)
-
 		if err != nil {
 			return nil, err
 		}
+
 		if i == numChunks {
 			chunkSize = (transfer.ByteSize)(int(rt.Length()) - int(rt.Transferred()))
 		}
-
 		chunkRT := transfer.NewReaderTransfer(io.LimitReader(rt, int64(chunkSize)), int(chunkSize))
 
 		req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
@@ -169,6 +169,10 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 	}
 
 	_, err = d.CompleteMultiPartUpload(service)
+	// retry logic here too? at this point, all parts have been uploaded
+	if err != nil {
+		return nil, fmt.Errorf("Failed to complete upload - %s", err)
+	}
 
 	importParams := map[string]interface{}{}
 	for key, value := range options {
@@ -204,7 +208,6 @@ func (d *SDb) InitiateMultiPartUpload(service *models.Service) (*models.Multipar
 		return nil, err
 	}
 	var uploadInfo models.MultipartUploadInfo
-	// parse out file name and upload id
 	err = d.Settings.HTTPManager.ConvertResp(resp, statusCode, &uploadInfo)
 	if err != nil {
 		return nil, err
