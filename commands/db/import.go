@@ -141,7 +141,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		}
 	}
 	if err != nil {
-		return nil, fmt.Errorf("Failed to intiate upload - %s", err)
+		return nil, fmt.Errorf("Failed to initiate upload - %s", err)
 	}
 
 	chunkSize := transfer.MB * 100
