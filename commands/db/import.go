@@ -1,6 +1,7 @@
 package db
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -161,15 +162,27 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		if i == numChunks {
 			chunkSize = (transfer.ByteSize)(int(rt.Length()) - int(rt.Transferred()))
 		}
-		chunkRT := transfer.NewReaderTransfer(io.LimitReader(rt, int64(chunkSize)), int(chunkSize))
 
-		done := make(chan bool)
-		go printTransferStatus(false, chunkRT, i, numChunks, done)
+		readBuffer := make([]byte, int(chunkSize))
+		bytesRead, err := rt.Read(readBuffer)
+		if err != nil {
+			return nil, err
+		}
+		if bytesRead < int(chunkSize) {
+			return nil, fmt.Errorf("Failed to read from file - attempted to read %v but read %v. Import failed.", int(chunkSize), bytesRead)
+		}
 
-		req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
-		req.ContentLength = int64(chunkRT.Length())
 		var uploadResp *http.Response
+		done := make(chan bool)
 		for attempt := 0; attempt < 5; attempt++ {
+			tempReader := bytes.NewReader(readBuffer)
+			chunkRT := transfer.NewReaderTransfer(io.LimitReader(tempReader, int64(chunkSize)), int(chunkSize))
+
+			go printTransferStatus(false, chunkRT, i, numChunks, done)
+
+			req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
+			req.ContentLength = int64(chunkRT.Length())
+
 			uploadResp, err = http.DefaultClient.Do(req)
 			if err == nil && uploadResp.StatusCode == 200 {
 				break
