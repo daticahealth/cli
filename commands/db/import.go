@@ -132,7 +132,6 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		options["database"] = mongoDatabase
 	}
 
-	// Check if the service the data will be imported to has a volume large enough for the amount of data (should be done before encryption)
 	var uploadInfo *models.MultipartUploadInfo
 	var err error
 	for attempt := 0; attempt < 5; attempt++ {
