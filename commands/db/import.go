@@ -249,7 +249,7 @@ func (d *SDb) CompleteMultiPartUpload(service *models.Service, fileName string, 
 	if err != nil {
 		return nil, err
 	}
-	resp, statusCode, err := d.Settings.HTTPManager.Post(body, fmt.Sprintf("%s%s/environments/%s/services/%s/complete-multipart-upload?fileName="+fileName+"&uploadId="+uploadID, d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
+	resp, statusCode, err := d.Settings.HTTPManager.Post(body, fmt.Sprintf("%s%s/environments/%s/services/%s/complete-multipart-upload?fileName=%s&uploadId=%s", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID, fileName, uploadID), headers)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func (d *SDb) CompleteMultiPartUpload(service *models.Service, fileName string, 
 
 func (d *SDb) TempUploadURL(service *models.Service, fileName string, partNumber string, uploadID string) (*models.TempURL, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
-	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/multipart-upload-url?fileName="+fileName+"&partNumber="+partNumber+"&uploadId="+uploadID, d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
+	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/multipart-upload-url?fileName="+fileName+"&partNumber=%s&uploadId=%s", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID, fileName, uploadID), headers)
 	if err != nil {
 		return nil, err
 	}
