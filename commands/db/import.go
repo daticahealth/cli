@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/daticahealth/cli/commands/services"
@@ -173,6 +174,8 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 			if err == nil && uploadResp.StatusCode == 200 {
 				break
 			}
+			logrus.Printf("Chunk upload %s failed.\nResponse code: %s\nErr: %s\nRetrying... )", strconv.Itoa(i), uploadResp.StatusCode, err)
+			time.Sleep(time.Second * 15)
 		}
 		if err != nil {
 			done <- false
@@ -183,7 +186,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 			done <- false
 			b, err := ioutil.ReadAll(uploadResp.Body)
 			logrus.Debugf("Error uploading import file: %d %s %s", uploadResp.StatusCode, string(b), err)
-			return nil, fmt.Errorf("Failed to upload import file - received status code %d", uploadResp.StatusCode)
+			return nil, fmt.Errorf("Failed to upload import file - received status code %d %s %s", uploadResp.StatusCode, string(b), err)
 		}
 		etag := uploadResp.Header.Get("ETag")
 		parts = append(parts, map[string]interface{}{
