@@ -49,6 +49,10 @@ func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, sk
 		return err
 	}
 	uploadSize := encryptFileReader.CalculateTotalSize(int(fi.Size()))
+	fiveTB := transfer.TB * 5
+	if transfer.ByteSize(uploadSize) > fiveTB {
+		return fmt.Errorf("the encrypted size of %s exceeds the maximum upload size of %s", filePath, fiveTB)
+	}
 	rt := transfer.NewReaderTransfer(encryptFileReader, uploadSize)
 	if !skipBackup {
 		logrus.Printf("Backing up \"%s\" before performing the import", databaseName)
@@ -129,13 +133,23 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 	}
 
 	// Check if the service the data will be imported to has a volume large enough for the amount of data (should be done before encryption)
-
-	uploadInfo, err := d.InitiateMultiPartUpload(service)
+	var uploadInfo *models.MultipartUploadInfo
+	var err error
+	for attempt := 0; attempt < 5; attempt++ {
+		uploadInfo, err = d.InitiateMultiPartUpload(service)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("Failed to intiate upload - %s", err)
 	}
 
 	chunkSize := transfer.MB * 100
+	if rt.Length() > transfer.TB {
+		chunkSize = transfer.MB * 500
+	}
+
 	numChunks := int(math.Ceil(float64(rt.Length() / chunkSize)))
 	parts := []map[string]interface{}{}
 	for i := 1; i <= numChunks; i++ {
@@ -149,18 +163,24 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		}
 		chunkRT := transfer.NewReaderTransfer(io.LimitReader(rt, int64(chunkSize)), int(chunkSize))
 
-		req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
-		req.ContentLength = int64(chunkRT.Length())
 		done := make(chan bool)
 		go printTransferStatus(false, chunkRT, i, numChunks, done)
-		uploadResp, err := http.DefaultClient.Do(req)
+
+		req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
+		req.ContentLength = int64(chunkRT.Length())
+		var uploadResp *http.Response
+		for attempt := 0; attempt < 5; attempt++ {
+			uploadResp, err = http.DefaultClient.Do(req)
+			if err == nil && uploadResp.StatusCode == 200 {
+				break
+			}
+		}
 		if err != nil {
 			done <- false
 			return nil, err
 		}
 		defer uploadResp.Body.Close()
 		if uploadResp.StatusCode != 200 {
-			// add in retry logic?
 			done <- false
 			b, err := ioutil.ReadAll(uploadResp.Body)
 			logrus.Debugf("Error uploading import file: %d %s %s", uploadResp.StatusCode, string(b), err)
@@ -174,8 +194,12 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		done <- true
 	}
 
-	_, err = d.CompleteMultiPartUpload(service, uploadInfo.FileName, uploadInfo.UploadID, parts)
-	// retry logic here too? at this point, all parts have been uploaded
+	for attempt := 0; attempt < 5; attempt++ {
+		_, err = d.CompleteMultiPartUpload(service, uploadInfo.FileName, uploadInfo.UploadID, parts)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("Failed to complete upload - %s", err)
 	}
@@ -206,7 +230,6 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 	return &job, nil
 }
 
-// The following three methods should be consolidated to call a single method with parameters for the differences
 func (d *SDb) InitiateMultiPartUpload(service *models.Service) (*models.MultipartUploadInfo, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
 	resp, statusCode, err := d.Settings.HTTPManager.Post(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/initiate-multipart-upload", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)

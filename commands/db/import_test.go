@@ -191,7 +191,7 @@ func TestDbImportOverFiveGB(t *testing.T) {
 	)
 	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/initiate-multipart-upload",
 		func(w http.ResponseWriter, r *http.Request) {
-			test.AssertEquals(t, r.Method, "GET")
+			test.AssertEquals(t, r.Method, "POST")
 			fmt.Fprint(w, fmt.Sprintf(`{"upload_id":"upload_id","file_name": "%s"}`, importFilePath))
 		},
 	)
@@ -203,7 +203,7 @@ func TestDbImportOverFiveGB(t *testing.T) {
 	)
 	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/complete-multipart-upload",
 		func(w http.ResponseWriter, r *http.Request) {
-			test.AssertEquals(t, r.Method, "GET")
+			test.AssertEquals(t, r.Method, "POST")
 			fmt.Fprint(w, fmt.Sprintf(`{"location":"location"}`))
 		},
 	)
@@ -265,7 +265,7 @@ func TestDbImportFailedUpload(t *testing.T) {
 	)
 	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/initiate-multipart-upload",
 		func(w http.ResponseWriter, r *http.Request) {
-			test.AssertEquals(t, r.Method, "GET")
+			test.AssertEquals(t, r.Method, "POST")
 			fmt.Fprint(w, fmt.Sprintf(`{"upload_id":"upload_id","file_name": "%s"}`, importFilePath))
 		},
 	)
@@ -277,7 +277,7 @@ func TestDbImportFailedUpload(t *testing.T) {
 	)
 	mux.HandleFunc("/environments/"+test.EnvID+"/services/"+dbID+"/complete-multipart-upload",
 		func(w http.ResponseWriter, r *http.Request) {
-			test.AssertEquals(t, r.Method, "GET")
+			test.AssertEquals(t, r.Method, "POST")
 			fmt.Fprint(w, fmt.Sprintf(`{"location":"location"}`))
 		},
 	)
