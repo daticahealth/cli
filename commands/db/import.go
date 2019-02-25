@@ -198,7 +198,6 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		if uploadResp.StatusCode != 200 {
 			done <- false
 			b, err := ioutil.ReadAll(uploadResp.Body)
-			logrus.Debugf("Error uploading import file: %d %s %s", uploadResp.StatusCode, string(b), err)
 			return nil, fmt.Errorf("Failed to upload import file - received status code %d %s %s", uploadResp.StatusCode, string(b), err)
 		}
 		etag := uploadResp.Header.Get("ETag")
