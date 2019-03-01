@@ -102,7 +102,7 @@ func (d *SDb) Export(filePath string, job *models.Job, service *models.Service) 
 
 	wct := transfer.NewWriteCloserTransfer(dfw, size)
 	done := make(chan bool)
-	go printTransferStatus(true, wct, done)
+	go printTransferStatus(true, wct, 1, 1, done)
 
 	_, err = io.Copy(wct, resp.Body)
 	if err != nil {
@@ -114,14 +114,14 @@ func (d *SDb) Export(filePath string, job *models.Job, service *models.Service) 
 	return dfw.Close()
 }
 
-func printTransferStatus(isDownload bool, tr transfer.Transfer, done <-chan bool) {
+func printTransferStatus(isDownload bool, tr transfer.Transfer, partNumber, totalParts int, done <-chan bool) {
 	action := "downloaded"
 	final := "Download"
 	status := "Finished"
 	if isDownload {
 		logrus.Println("Decrypting and Downloading...")
 	} else {
-		logrus.Println("Encrypting and Uploading...")
+		logrus.Printf("Encrypting and Uploading part %d of %d...\n", partNumber, totalParts)
 		action = "uploaded"
 		final = "Upload"
 	}
