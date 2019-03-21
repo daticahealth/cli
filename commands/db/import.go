@@ -177,7 +177,6 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		for attempt := 0; attempt < 5; attempt++ {
 			tempReader := bytes.NewReader(readBuffer)
 			chunkRT := transfer.NewReaderTransfer(io.LimitReader(tempReader, int64(chunkSize)), int(chunkSize))
-
 			go printTransferStatus(false, chunkRT, i, numChunks, done)
 
 			req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
@@ -187,24 +186,33 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 			if err == nil && uploadResp.StatusCode == 200 {
 				break
 			}
-			logrus.Printf("Chunk upload %s failed.\nResponse code: %s\nErr: %s\nRetrying... )", strconv.Itoa(i), uploadResp.StatusCode, err)
+
+			if uploadResp == nil {
+				logrus.Printf("\nChunk upload %s failed.\nErr: %s\nRetrying...", strconv.Itoa(i), fmt.Errorf("No response from server"))
+			} else {
+				logrus.Printf("\nChunk upload %s failed.\nResponse code: %s\nErr: %s\nRetrying...", strconv.Itoa(i), uploadResp.StatusCode, err)
+			}
 			time.Sleep(time.Second * 15)
 		}
 		if err != nil {
 			done <- false
 			return nil, err
 		}
-		defer uploadResp.Body.Close()
-		if uploadResp.StatusCode != 200 {
-			done <- false
-			b, err := ioutil.ReadAll(uploadResp.Body)
-			return nil, fmt.Errorf("Failed to upload import file - received status code %d %s %s", uploadResp.StatusCode, string(b), err)
+		if uploadResp == nil {
+			return nil, fmt.Errorf("Failed to upload import file - %s", fmt.Errorf("No response from server"))
+		} else {
+			defer uploadResp.Body.Close()
+			if uploadResp.StatusCode != 200 {
+				done <- false
+				b, err := ioutil.ReadAll(uploadResp.Body)
+				return nil, fmt.Errorf("Failed to upload import file - received status code %d %s %s", uploadResp.StatusCode, string(b), err)
+			}
+			etag := uploadResp.Header.Get("ETag")
+			parts = append(parts, map[string]interface{}{
+				"ETag":       etag,
+				"PartNumber": i,
+			})
 		}
-		etag := uploadResp.Header.Get("ETag")
-		parts = append(parts, map[string]interface{}{
-			"ETag":       etag,
-			"PartNumber": i,
-		})
 		done <- true
 	}
 
@@ -278,7 +286,7 @@ func (d *SDb) CompleteMultiPartUpload(service *models.Service, fileName string, 
 
 func (d *SDb) TempUploadURL(service *models.Service, fileName string, partNumber string, uploadID string) (*models.TempURL, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
-	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/multipart-upload-url?fileName="+fileName+"&partNumber=%s&uploadId=%s", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID, fileName, uploadID), headers)
+	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/multipart-upload-url?fileName=%s&partNumber=%s&uploadId=%s", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID, fileName, partNumber, uploadID), headers)
 	if err != nil {
 		return nil, err
 	}
