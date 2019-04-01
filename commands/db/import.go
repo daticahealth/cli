@@ -190,7 +190,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 			if uploadResp == nil {
 				logrus.Printf("\nChunk upload %s failed.\nErr: %s\nRetrying...", strconv.Itoa(i), fmt.Errorf("No response from server"))
 			} else {
-				logrus.Printf("\nChunk upload %s failed.\nResponse code: %s\nErr: %s\nRetrying...", strconv.Itoa(i), uploadResp.StatusCode, err)
+				logrus.Printf("\nChunk upload %s failed.\nResponse code: %s\nErr: %s\nRetrying...", strconv.Itoa(i), strconv.Itoa(uploadResp.StatusCode), err)
 			}
 			time.Sleep(time.Second * 15)
 		}
