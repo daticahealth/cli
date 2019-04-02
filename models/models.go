@@ -169,6 +169,11 @@ func (l LetsEncryptStatus) String() string {
 	return ""
 }
 
+// Location is an s3 object location
+type Location struct {
+	Location string `json:"location"`
+}
+
 // LogHits contain ordering data for logs
 type LogHits struct {
 	Index  string              `json:"_index"`
@@ -219,6 +224,12 @@ type MetricsData struct {
 	CPUUsage     *[]CPUUsage     `json:"cpu.usage"`
 	MemoryUsage  *[]MemoryUsage  `json:"memory.usage"`
 	NetworkUsage *[]NetworkUsage `json:"network.usage"`
+}
+
+// MultipartUploadInfo holds the identifiers necessary for upload parts to an s3 bucket
+type MultipartUploadInfo struct {
+	FileName string `json:"file_name"`
+	UploadID string `json:"upload_id"`
 }
 
 type NetworkUsage struct {

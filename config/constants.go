@@ -14,7 +14,7 @@ const (
 	// AccountsHost is the production accounts URL
 	AccountsHost = "https://product.datica.com"
 	// AuthHost is the production auth URL
-	AuthHost = "https://auth.catalyze.io"
+	AuthHost = "https://auth.datica.com"
 	// AuthHostVersion is the version path for the auth host
 	AuthHostVersion = ""
 	// PaasHost is the production PaaS URL
