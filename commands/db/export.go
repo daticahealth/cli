@@ -11,6 +11,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/daticahealth/cli/commands/services"
+	"github.com/daticahealth/cli/lib/httpclient"
 	"github.com/daticahealth/cli/lib/jobs"
 	"github.com/daticahealth/cli/lib/prompts"
 	"github.com/daticahealth/cli/lib/transfer"
@@ -87,7 +88,14 @@ func (d *SDb) Export(filePath string, job *models.Job, service *models.Service) 
 		return err
 	}
 	defer resp.Body.Close()
-	size, err := strconv.Atoi(resp.Header.Get("Content-Length"))
+	if httpclient.IsError(resp.StatusCode) {
+		return httpclient.ConvertError(resp)
+	}
+	contentLength := resp.Header.Get("Content-Length")
+	if contentLength == "" {
+		return fmt.Errorf("Export succeeded, but Content-Length was not present in the response.")
+	}
+	size, err := strconv.Atoi(contentLength)
 	if err != nil {
 		return err
 	}
