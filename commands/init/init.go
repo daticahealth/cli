@@ -1,10 +1,13 @@
 package init
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
+
+	"github.com/daticahealth/cli/lib/pods"
 
 	"golang.org/x/crypto/ssh"
 
@@ -20,9 +23,20 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 )
 
-func CmdInit(settings *models.Settings, p prompts.IPrompts) error {
-	logrus.Println("To set up your local repository, we need to know what environment and service you want to push your code to.")
+func CmdInit(serviceName string, noInput bool, remoteName string, overwriteRemote bool, settings *models.Settings, p prompts.IPrompts) error {
+	if settings.GivenEnvName == "" || serviceName == "" {
+		if noInput {
+			return errors.New("--no-input was passed - both environment and service need to be explicitly provided.")
+		}
+		logrus.Println("To set up your local repository, we need to know what environment and service you want to push your code to.")
+	}
 
+	ip := pods.New(settings)
+	pods, err := ip.List()
+	if err != nil {
+		return err
+	}
+	settings.Pods = pods
 	ie := environments.New(settings)
 	envs, errs := ie.List()
 	if errs != nil && len(errs) > 0 {
@@ -35,23 +49,39 @@ func CmdInit(settings *models.Settings, p prompts.IPrompts) error {
 
 	config.StoreEnvironments(envs, settings)
 
-	logrus.Printf("%d environment(s) found:", len(*envs))
-	for i, env := range *envs {
-		logrus.Printf("\t%d) %s", i+1, env.Name)
-	}
-	env := (*envs)[0]
-	if len(*envs) > 1 {
-		for {
-			choice := p.CaptureInput("Enter your choice as a number: ")
-			i, err := strconv.ParseUint(choice, 10, 64)
-			if err != nil || i == 0 || i > uint64(len(*envs)) {
-				logrus.Printf("%s is not a valid number", choice)
-				continue
+	var env *models.Environment
+
+	// if an environment name was provided, find that one in the list
+	if settings.GivenEnvName != "" {
+		for _, e := range *envs {
+			if e.Name == settings.EnvironmentName {
+				env = &e
+				break
 			}
-			env = (*envs)[i-1]
-			break
+		}
+		if env == nil {
+			return fmt.Errorf("Environment name \"%s\" was specified, but this user does not have access to an environment with that name.", settings.GivenEnvName)
+		}
+	} else {
+		logrus.Printf("%d environment(s) found:", len(*envs))
+		for i, e := range *envs {
+			logrus.Printf("\t%d) %s", i+1, e.Name)
+		}
+		env = &(*envs)[0]
+		if len(*envs) > 1 {
+			for {
+				choice := p.CaptureInput("Enter your choice as a number: ")
+				i, err := strconv.ParseUint(choice, 10, 64)
+				if err != nil || i == 0 || i > uint64(len(*envs)) {
+					logrus.Printf("%s is not a valid number", choice)
+					continue
+				}
+				env = &(*envs)[i-1]
+				break
+			}
 		}
 	}
+
 	settings.EnvironmentID = env.ID
 	settings.Pod = env.Pod
 	settings.EnvironmentName = env.Name
@@ -70,24 +100,37 @@ func CmdInit(settings *models.Settings, p prompts.IPrompts) error {
 		}
 	}
 	if len(codeServices) == 0 {
-		logrus.Println("You don't have any code services. Visit the dashboard to add one")
-		return nil
+		return errors.New("This environment does not have any code services.")
 	}
-	logrus.Printf("%d code service(s) found for %s:", len(codeServices), env.Name)
-	for i, svc := range codeServices {
-		logrus.Printf("\t%d) %s", i+1, svc.Label)
-	}
-	svc := codeServices[0]
-	if len(codeServices) > 1 {
-		for {
-			choice := p.CaptureInput("Enter your choice as a number: ")
-			i, err := strconv.ParseUint(choice, 10, 64)
-			if err != nil || i == 0 || i > uint64(len(codeServices)) {
-				logrus.Printf("%s is not a valid number", choice)
-				continue
+
+	var svc *models.Service
+	if serviceName != "" {
+		for _, s := range codeServices {
+			if s.Label == serviceName {
+				svc = &s
+				break
 			}
-			svc = codeServices[i-1]
-			break
+		}
+		if svc == nil {
+			return fmt.Errorf("Service name \"%s\" was specified, but no code service with this name exists in this environment.", serviceName)
+		}
+	} else {
+		logrus.Printf("%d code service(s) found for %s:", len(codeServices), env.Name)
+		for i, s := range codeServices {
+			logrus.Printf("\t%d) %s", i+1, s.Label)
+		}
+		svc = &codeServices[0]
+		if len(codeServices) > 1 {
+			for {
+				choice := p.CaptureInput("Enter your choice as a number: ")
+				i, err := strconv.ParseUint(choice, 10, 64)
+				if err != nil || i == 0 || i > uint64(len(codeServices)) {
+					logrus.Printf("%s is not a valid number", choice)
+					continue
+				}
+				svc = &codeServices[i-1]
+				break
+			}
 		}
 	}
 
@@ -97,8 +140,7 @@ func CmdInit(settings *models.Settings, p prompts.IPrompts) error {
 		ig.Create()
 	}
 
-	logrus.Printf("Adding git remote for %s...", svc.Label)
-	remoteName := "datica"
+	logrus.Printf("Adding \"%s\" git remote for %s...", remoteName, svc.Label)
 	remotes, err := ig.List()
 	if err != nil {
 		return err
@@ -111,8 +153,13 @@ func CmdInit(settings *models.Settings, p prompts.IPrompts) error {
 		}
 	}
 	if exists {
-		if err := p.YesNo(fmt.Sprintf("A git remote named \"%s\" already exists.", remoteName), "Would you like to overwrite it? (y/n) "); err != nil {
-			return err
+		if !overwriteRemote {
+			if noInput {
+				return fmt.Errorf("A git remote named \"%s\" already exists for this environment.", remoteName)
+			}
+			if err := p.YesNo(fmt.Sprintf("A git remote named \"%s\" already exists.", remoteName), "Would you like to overwrite it? (y/n) "); err != nil {
+				return err
+			}
 		}
 		err = ig.SetURL(remoteName, svc.Source)
 	} else {
@@ -122,15 +169,12 @@ func CmdInit(settings *models.Settings, p prompts.IPrompts) error {
 		return fmt.Errorf("Failed to setup the git remote: %s", err)
 	}
 
-	// TODO insert lets encrypt setup here once ready
-	logrus.Println("Creating certificates...")
-
 	ik := keys.New(settings)
 	userKeys, err := ik.List()
 	if err != nil {
 		return err
 	}
-	if userKeys == nil || len(*userKeys) == 0 {
+	if !noInput && (userKeys == nil || len(*userKeys) == 0) {
 		logrus.Println("You'll need to add an SSH key in order to push code.")
 		for {
 			keyPath := p.CaptureInput("Enter the path to your public SSH key (leave empty to skip): ")
@@ -163,6 +207,6 @@ func CmdInit(settings *models.Settings, p prompts.IPrompts) error {
 		}
 	}
 
-	logrus.Println("All set! Next, you'll need to make sure you have an SSH key to push code using the \"datica keys\" command. Once your key is set up, run \"git push datica master\" to push your code.")
+	logrus.Printf("All set! Once you're ready, run \"git push %s master\" to build and deploy your application.", remoteName)
 	return nil
 }
