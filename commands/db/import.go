@@ -9,8 +9,10 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -60,6 +62,7 @@ func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, sk
 	fiveGB := transfer.GB * 5
 	if isPod05 && transfer.ByteSize(uploadSize) > fiveGB {
 		return fmt.Errorf("the encrypted size of %s exceeds the maximum upload size of %s", filePath, fiveGB)
+	}
 	fiveTB := transfer.TB * 5
 	if transfer.ByteSize(uploadSize) > fiveTB {
 		return fmt.Errorf("the encrypted size of %s exceeds the maximum upload size of %s", filePath, fiveTB)
@@ -253,6 +256,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 					"PartNumber": i,
 				})
 			}
+			uploadFilename = uploadInfo.FileName
 			done <- true
 		}
 
@@ -271,7 +275,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 	for key, value := range options {
 		importParams[key] = value
 	}
-	importParams["filename"] = uploadFileName
+	importParams["filename"] = uploadFilename
 	importParams["encryptionKey"] = string(d.Crypto.Hex(key, crypto.KeySize*2))
 	importParams["encryptionIV"] = string(d.Crypto.Hex(iv, crypto.IVSize*2))
 	importParams["dropDatabase"] = false
