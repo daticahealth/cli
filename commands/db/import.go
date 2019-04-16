@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -23,7 +24,33 @@ import (
 )
 
 func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, skipBackup bool, id IDb, ip prompts.IPrompts, is services.IServices, ij jobs.IJobs) error {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+	isPod05 := false
+	versionInfo, err := id.RetrievePodApiVersion()
+	versionInfoSplit := strings.Split(versionInfo.Version, ".")
+
+	majorVersion, err := strconv.Atoi(versionInfoSplit[0])
+	if err != nil {
+		return err
+	}
+	minorVersion, err := strconv.Atoi(versionInfoSplit[1])
+	if err != nil {
+		return err
+	}
+	maintenanceVersion, err := strconv.Atoi(versionInfoSplit[2])
+	if err != nil {
+		return err
+	}
+	if majorVersion < 5 {
+		if minorVersion < 1 {
+			if maintenanceVersion < 7 {
+				isPod05 = true
+			}
+		}
+	}
+	logrus.Printf(versionInfo.Version)
+	return nil
+
+	if _, err = os.Stat(filePath); os.IsNotExist(err) {
 		return fmt.Errorf("A file does not exist at path '%s'", filePath)
 	}
 	service, err := is.RetrieveByLabel(databaseName)
@@ -288,4 +315,18 @@ func (d *SDb) TempUploadURL(service *models.Service, fileName string, partNumber
 		return nil, err
 	}
 	return &tempURL, nil
+}
+
+func (d *SDb) RetrievePodApiVersion() (*models.VersionInfo, error) {
+	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
+	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/healthcheck", d.Settings.PaasHost, d.Settings.PaasHostVersion), headers)
+	if err != nil {
+		return nil, err
+	}
+	var versionInfo models.VersionInfo
+	err = d.Settings.HTTPManager.ConvertResp(resp, statusCode, &versionInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &versionInfo, nil
 }

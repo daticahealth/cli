@@ -452,6 +452,11 @@ type UserKey struct {
 	Key  string `json:"key"`
 }
 
+type VersionInfo struct {
+	Status  string `json:"status"`
+	Version string `json:"version"`
+}
+
 type Volume struct {
 	ID   int    `json:"id"`
 	Type string `json:"type"`

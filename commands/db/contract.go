@@ -235,6 +235,7 @@ type IDb interface {
 	TempLogsURL(jobID string, serviceID string) (*models.TempURL, error)
 	DumpLogs(taskType string, job *models.Job, service *models.Service) error
 	NewEncryptReader(reader io.Reader, key, iv []byte) (*gcm.EncryptReader, error)
+	RetrievePodApiVersion() (*models.VersionInfo, error)
 }
 
 // SDb is a concrete implementation of IDb
