@@ -122,9 +122,9 @@ func printTransferStatus(isDownload bool, tr transfer.Transfer, partNumber, tota
 		logrus.Println("Decrypting and Downloading...")
 	} else {
 		if totalParts == 0 {
-			logrus.Printf("Encrypting and uploading...\n")
+			logrus.Printf("\nEncrypting and uploading...\n")
 		} else {
-			logrus.Printf("Encrypting and uploading part %d of %d...\n", partNumber, totalParts)
+			logrus.Printf("\nEncrypting and uploading part %d of %d...\n", partNumber, totalParts)
 		}
 		action = "uploaded"
 		final = "Upload"
