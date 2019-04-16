@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -26,29 +25,9 @@ import (
 func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, skipBackup bool, id IDb, ip prompts.IPrompts, is services.IServices, ij jobs.IJobs) error {
 	isPod05 := false
 	versionInfo, err := id.RetrievePodApiVersion()
-	versionInfoSplit := strings.Split(versionInfo.Version, ".")
-
-	majorVersion, err := strconv.Atoi(versionInfoSplit[0])
-	if err != nil {
-		return err
+	if versionInfo.Version < "4.1.0" {
+		isPod05 = true
 	}
-	minorVersion, err := strconv.Atoi(versionInfoSplit[1])
-	if err != nil {
-		return err
-	}
-	maintenanceVersion, err := strconv.Atoi(versionInfoSplit[2])
-	if err != nil {
-		return err
-	}
-	if majorVersion < 5 {
-		if minorVersion < 1 {
-			if maintenanceVersion < 7 {
-				isPod05 = true
-			}
-		}
-	}
-	logrus.Printf(versionInfo.Version)
-	return nil
 
 	if _, err = os.Stat(filePath); os.IsNotExist(err) {
 		return fmt.Errorf("A file does not exist at path '%s'", filePath)
@@ -78,6 +57,9 @@ func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, sk
 		return err
 	}
 	uploadSize := encryptFileReader.CalculateTotalSize(int(fi.Size()))
+	fiveGB := transfer.GB * 5
+	if isPod05 && transfer.ByteSize(uploadSize) > fiveGB {
+		return fmt.Errorf("the encrypted size of %s exceeds the maximum upload size of %s", filePath, fiveGB)
 	fiveTB := transfer.TB * 5
 	if transfer.ByteSize(uploadSize) > fiveTB {
 		return fmt.Errorf("the encrypted size of %s exceeds the maximum upload size of %s", filePath, fiveTB)
@@ -120,7 +102,7 @@ func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, sk
 		}
 	}
 	logrus.Printf("Importing '%s' into %s (ID = %s)", filePath, databaseName, service.ID)
-	job, err := id.Import(rt, key, iv, mongoCollection, mongoDatabase, service)
+	job, err := id.Import(rt, key, iv, mongoCollection, mongoDatabase, service, isPod05)
 	if err != nil {
 		return err
 	}
@@ -152,7 +134,7 @@ func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, sk
 // PostgreSQL and MySQL, this should be a single `.sql` file. For Mongo, this
 // should be a single tar'ed, gzipped archive (`.tar.gz`) of the database dump
 // that you want to import.
-func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollection, mongoDatabase string, service *models.Service) (*models.Job, error) {
+func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollection, mongoDatabase string, service *models.Service, isPod05 bool) (*models.Job, error) {
 	options := map[string]string{}
 	if mongoCollection != "" {
 		options["databaseCollection"] = mongoCollection
@@ -161,62 +143,23 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		options["database"] = mongoDatabase
 	}
 
-	var uploadInfo *models.MultipartUploadInfo
-	var err error
-	for attempt := 0; attempt < 5; attempt++ {
-		uploadInfo, err = d.InitiateMultiPartUpload(service)
-		if err == nil {
-			break
-		}
-	}
-	if err != nil {
-		return nil, fmt.Errorf("Failed to initiate upload - %s", err)
-	}
+	uploadFilename := ""
 
-	chunkSize := transfer.MB * 100
-	if rt.Length() > transfer.TB {
-		chunkSize = transfer.MB * 500
-	}
-
-	numChunks := int(math.Ceil(float64(rt.Length() / chunkSize)))
-	parts := []map[string]interface{}{}
-	for i := 1; i <= numChunks; i++ {
-		tmpURL, err := d.TempUploadURL(service, uploadInfo.FileName, strconv.Itoa(i), uploadInfo.UploadID)
+	if isPod05 {
+		tmpURL, err := d.TempUploadURLPod05(service)
 		if err != nil {
 			return nil, err
 		}
-
-		if i == numChunks {
-			chunkSize = (transfer.ByteSize)(int(rt.Length()) - int(rt.Transferred()))
-		}
-
-		readBuffer := make([]byte, int(chunkSize))
-		bytesRead, err := rt.Read(readBuffer)
+		u, err := url.Parse(tmpURL.URL)
 		if err != nil {
 			return nil, err
 		}
-		if bytesRead < int(chunkSize) {
-			return nil, fmt.Errorf("Failed to read from file - attempted to read %v but read %v. Import failed.", int(chunkSize), bytesRead)
-		}
-
-		var uploadResp *http.Response
+		req, err := http.NewRequest("PUT", tmpURL.URL, rt)
+		req.Header.Set("x-amz-server-side-encryption", "AES256")
+		req.ContentLength = int64(rt.Length())
 		done := make(chan bool)
-		for attempt := 0; attempt < 5; attempt++ {
-			tempReader := bytes.NewReader(readBuffer)
-			chunkRT := transfer.NewReaderTransfer(io.LimitReader(tempReader, int64(chunkSize)), int(chunkSize))
-
-			go printTransferStatus(false, chunkRT, i, numChunks, done)
-
-			req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
-			req.ContentLength = int64(chunkRT.Length())
-
-			uploadResp, err = http.DefaultClient.Do(req)
-			if err == nil && uploadResp.StatusCode == 200 {
-				break
-			}
-			logrus.Printf("Chunk upload %s failed.\nResponse code: %s\nErr: %s\nRetrying... )", strconv.Itoa(i), uploadResp.StatusCode, err)
-			time.Sleep(time.Second * 15)
-		}
+		go printTransferStatus(false, rt, 0, 0, done)
+		uploadResp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			done <- false
 			return nil, err
@@ -225,31 +168,103 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		if uploadResp.StatusCode != 200 {
 			done <- false
 			b, err := ioutil.ReadAll(uploadResp.Body)
-			return nil, fmt.Errorf("Failed to upload import file - received status code %d %s %s", uploadResp.StatusCode, string(b), err)
+			logrus.Debugf("Error uploading import file: %d %s %s", uploadResp.StatusCode, string(b), err)
+			return nil, fmt.Errorf("Failed to upload import file - received status code %d", uploadResp.StatusCode)
 		}
-		etag := uploadResp.Header.Get("ETag")
-		parts = append(parts, map[string]interface{}{
-			"ETag":       etag,
-			"PartNumber": i,
-		})
+		uploadFilename = strings.TrimLeft(u.Path, "/")
 		done <- true
-	}
-
-	for attempt := 0; attempt < 5; attempt++ {
-		_, err = d.CompleteMultiPartUpload(service, uploadInfo.FileName, uploadInfo.UploadID, parts)
-		if err == nil {
-			break
+	} else {
+		var uploadInfo *models.MultipartUploadInfo
+		var err error
+		for attempt := 0; attempt < 5; attempt++ {
+			uploadInfo, err = d.InitiateMultiPartUpload(service)
+			if err == nil {
+				break
+			}
 		}
-	}
-	if err != nil {
-		return nil, fmt.Errorf("Failed to complete upload - %s", err)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to initiate upload - %s", err)
+		}
+
+		chunkSize := transfer.MB * 100
+		if rt.Length() > transfer.TB {
+			chunkSize = transfer.MB * 500
+		}
+
+		numChunks := int(math.Ceil(float64(rt.Length() / chunkSize)))
+		parts := []map[string]interface{}{}
+		for i := 1; i <= numChunks; i++ {
+			tmpURL, err := d.TempUploadURL(service, uploadInfo.FileName, strconv.Itoa(i), uploadInfo.UploadID)
+			if err != nil {
+				return nil, err
+			}
+
+			if i == numChunks {
+				chunkSize = (transfer.ByteSize)(int(rt.Length()) - int(rt.Transferred()))
+			}
+
+			readBuffer := make([]byte, int(chunkSize))
+			bytesRead, err := rt.Read(readBuffer)
+			if err != nil {
+				return nil, err
+			}
+			if bytesRead < int(chunkSize) {
+				return nil, fmt.Errorf("Failed to read from file - attempted to read %v but read %v. Import failed.", int(chunkSize), bytesRead)
+			}
+
+			var uploadResp *http.Response
+			done := make(chan bool)
+			for attempt := 0; attempt < 5; attempt++ {
+				tempReader := bytes.NewReader(readBuffer)
+				chunkRT := transfer.NewReaderTransfer(io.LimitReader(tempReader, int64(chunkSize)), int(chunkSize))
+
+				go printTransferStatus(false, chunkRT, i, numChunks, done)
+
+				req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
+				req.ContentLength = int64(chunkRT.Length())
+
+				uploadResp, err = http.DefaultClient.Do(req)
+				if err == nil && uploadResp.StatusCode == 200 {
+					break
+				}
+				logrus.Printf("Chunk upload %s failed.\nResponse code: %s\nErr: %s\nRetrying... )", strconv.Itoa(i), uploadResp.StatusCode, err)
+				time.Sleep(time.Second * 15)
+			}
+			if err != nil {
+				done <- false
+				return nil, err
+			}
+			defer uploadResp.Body.Close()
+			if uploadResp.StatusCode != 200 {
+				done <- false
+				b, err := ioutil.ReadAll(uploadResp.Body)
+				return nil, fmt.Errorf("Failed to upload import file - received status code %d %s %s", uploadResp.StatusCode, string(b), err)
+			}
+			etag := uploadResp.Header.Get("ETag")
+			parts = append(parts, map[string]interface{}{
+				"ETag":       etag,
+				"PartNumber": i,
+			})
+			uploadFileName = uploadInfo.FileName
+			done <- true
+		}
+
+		for attempt := 0; attempt < 5; attempt++ {
+			_, err = d.CompleteMultiPartUpload(service, uploadInfo.FileName, uploadInfo.UploadID, parts)
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			return nil, fmt.Errorf("Failed to complete upload - %s", err)
+		}
 	}
 
 	importParams := map[string]interface{}{}
 	for key, value := range options {
 		importParams[key] = value
 	}
-	importParams["filename"] = uploadInfo.FileName
+	importParams["filename"] = uploadFileName
 	importParams["encryptionKey"] = string(d.Crypto.Hex(key, crypto.KeySize*2))
 	importParams["encryptionIV"] = string(d.Crypto.Hex(iv, crypto.IVSize*2))
 	importParams["dropDatabase"] = false
@@ -306,6 +321,20 @@ func (d *SDb) CompleteMultiPartUpload(service *models.Service, fileName string, 
 func (d *SDb) TempUploadURL(service *models.Service, fileName string, partNumber string, uploadID string) (*models.TempURL, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
 	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/multipart-upload-url?fileName="+fileName+"&partNumber=%s&uploadId=%s", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID, fileName, uploadID), headers)
+	if err != nil {
+		return nil, err
+	}
+	var tempURL models.TempURL
+	err = d.Settings.HTTPManager.ConvertResp(resp, statusCode, &tempURL)
+	if err != nil {
+		return nil, err
+	}
+	return &tempURL, nil
+}
+
+func (d *SDb) TempUploadURLPod05(service *models.Service) (*models.TempURL, error) {
+	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
+	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/restore-url", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
 	if err != nil {
 		return nil, err
 	}
