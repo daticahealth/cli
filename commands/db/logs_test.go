@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/daticahealth/cli/commands/services"
+	"github.com/daticahealth/cli/lib/compress"
 	"github.com/daticahealth/cli/lib/crypto"
 	"github.com/daticahealth/cli/lib/jobs"
 	"github.com/daticahealth/cli/test"
@@ -62,7 +63,7 @@ func TestDbLogs(t *testing.T) {
 		t.Logf("Data: %+v", data)
 
 		// test
-		err := CmdLogs(data.databaseName, data.jobID, New(settings, crypto.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
+		err := CmdLogs(data.databaseName, data.jobID, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
 
 		// assert
 		if err != nil {

@@ -77,13 +77,17 @@ func CmdExport(databaseName, filePath string, force bool, id IDb, ip prompts.IPr
 // Export dumps all data from a database service and downloads the encrypted
 // data to the local machine. The export is accomplished by first creating a
 // backup. Once finished, the CLI asks where the file can be downloaded from.
-// The file is downloaded, decrypted, and saved locally.
+// The file is downloaded, decrypted, decompressed, and saved locally.
 func (d *SDb) Export(filePath string, job *models.Job, service *models.Service) error {
 	tempURL, err := d.TempDownloadURL(job.ID, service)
 	if err != nil {
 		return err
 	}
-	resp, err := http.Get(tempURL.URL)
+	tr := &http.Transport{ // gzip encoded backups must first be decrypted
+		DisableCompression: true, // Disable automatic decompress
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Get(tempURL.URL)
 	if err != nil {
 		return err
 	}
@@ -99,10 +103,19 @@ func (d *SDb) Export(filePath string, job *models.Job, service *models.Service) 
 	if err != nil {
 		return err
 	}
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	var file io.WriteCloser
+	file, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
+	contentEncoding := resp.Header.Get("Content-Encoding")
+	if contentEncoding == "gzip" {
+		file, err = d.Compress.NewDecompressWriteCloser(file, contentEncoding)
+		if err != nil {
+			return err
+		}
+	}
+
 	dfw, err := d.Crypto.NewDecryptWriteCloser(file, job.Backup.Key, job.Backup.IV)
 	if err != nil {
 		return err

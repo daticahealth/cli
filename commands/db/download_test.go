@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/daticahealth/cli/commands/services"
+	"github.com/daticahealth/cli/lib/compress"
 	"github.com/daticahealth/cli/lib/crypto"
 	"github.com/daticahealth/cli/lib/jobs"
 	"github.com/daticahealth/cli/test"
@@ -64,7 +65,7 @@ func TestDbDownload(t *testing.T) {
 		t.Logf("Data: %+v", data)
 
 		// test
-		err := CmdDownload(data.databaseName, data.backupID, data.filePath, data.force, New(settings, crypto.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
+		err := CmdDownload(data.databaseName, data.backupID, data.filePath, data.force, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
 
 		// assert
 		if err != nil {
