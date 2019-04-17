@@ -25,10 +25,10 @@ import (
 )
 
 func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, skipBackup bool, id IDb, ip prompts.IPrompts, is services.IServices, ij jobs.IJobs) error {
-	isPod05 := false
+	singleUploadMode := false
 	versionInfo, err := id.RetrievePodApiVersion()
 	if versionInfo.Version < "4.1.0" {
-		isPod05 = true
+		singleUploadMode = true
 	}
 
 	if _, err = os.Stat(filePath); os.IsNotExist(err) {
@@ -60,7 +60,7 @@ func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, sk
 	}
 	uploadSize := encryptFileReader.CalculateTotalSize(int(fi.Size()))
 	fiveGB := transfer.GB * 5
-	if isPod05 && transfer.ByteSize(uploadSize) > fiveGB {
+	if singleUploadMode && transfer.ByteSize(uploadSize) > fiveGB {
 		return fmt.Errorf("the encrypted size of %s exceeds the maximum upload size of %s", filePath, fiveGB)
 	}
 	fiveTB := transfer.TB * 5
@@ -105,7 +105,7 @@ func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, sk
 		}
 	}
 	logrus.Printf("Importing '%s' into %s (ID = %s)", filePath, databaseName, service.ID)
-	job, err := id.Import(rt, key, iv, mongoCollection, mongoDatabase, service, isPod05)
+	job, err := id.Import(rt, key, iv, mongoCollection, mongoDatabase, service, singleUploadMode)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, sk
 // PostgreSQL and MySQL, this should be a single `.sql` file. For Mongo, this
 // should be a single tar'ed, gzipped archive (`.tar.gz`) of the database dump
 // that you want to import.
-func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollection, mongoDatabase string, service *models.Service, isPod05 bool) (*models.Job, error) {
+func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollection, mongoDatabase string, service *models.Service, singleUploadMode bool) (*models.Job, error) {
 	options := map[string]string{}
 	if mongoCollection != "" {
 		options["databaseCollection"] = mongoCollection
@@ -148,8 +148,8 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 
 	uploadFilename := ""
 
-	if isPod05 {
-		tmpURL, err := d.TempUploadURLPod05(service)
+	if singleUploadMode {
+		tmpURL, err := d.TempUploadURLSingleUploadMode(service)
 		if err != nil {
 			return nil, err
 		}
@@ -343,7 +343,7 @@ func (d *SDb) TempUploadURL(service *models.Service, fileName string, partNumber
 	return &tempURL, nil
 }
 
-func (d *SDb) TempUploadURLPod05(service *models.Service) (*models.TempURL, error) {
+func (d *SDb) TempUploadURLSingleUploadMode(service *models.Service) (*models.TempURL, error) {
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
 	resp, statusCode, err := d.Settings.HTTPManager.Get(nil, fmt.Sprintf("%s%s/environments/%s/services/%s/restore-url", d.Settings.PaasHost, d.Settings.PaasHostVersion, d.Settings.EnvironmentID, service.ID), headers)
 	if err != nil {
