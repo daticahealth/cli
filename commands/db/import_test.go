@@ -320,7 +320,7 @@ func TestDbImportFailedUpload(t *testing.T) {
 	os.Remove(importFilePath)
 }
 
-func TestDbImportPod05(t *testing.T) {
+func TestDbImportSingleUploadMode(t *testing.T) {
 	ioutil.WriteFile(importFilePath, []byte("select 1;"), 0644)
 	mux, server, baseURL := test.Setup()
 	defer test.Teardown(server)
