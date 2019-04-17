@@ -61,11 +61,11 @@ func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, sk
 	uploadSize := encryptFileReader.CalculateTotalSize(int(fi.Size()))
 	fiveGB := transfer.GB * 5
 	if singleUploadMode && transfer.ByteSize(uploadSize) > fiveGB {
-		return fmt.Errorf("the encrypted size of %s exceeds the maximum upload size of %s", filePath, fiveGB)
+		return fmt.Errorf("The encrypted size of %s exceeds the maximum upload size of %s", filePath, fiveGB)
 	}
 	fiveTB := transfer.TB * 5
 	if transfer.ByteSize(uploadSize) > fiveTB {
-		return fmt.Errorf("the encrypted size of %s exceeds the maximum upload size of %s", filePath, fiveTB)
+		return fmt.Errorf("The encrypted size of %s exceeds the maximum upload size of %s", filePath, fiveTB)
 	}
 	rt := transfer.NewReaderTransfer(encryptFileReader, uploadSize)
 	if !skipBackup {
