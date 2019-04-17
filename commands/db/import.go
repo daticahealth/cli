@@ -149,7 +149,6 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 	uploadFilename := ""
 
 	if isPod05 {
-		logrus.Printf("Using singlepart upload logic...")
 		tmpURL, err := d.TempUploadURLPod05(service)
 		if err != nil {
 			return nil, err
@@ -178,7 +177,6 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 		uploadFilename = strings.TrimLeft(u.Path, "/")
 		done <- true
 	} else {
-		logrus.Printf("Using multipart upload logic...")
 		var uploadInfo *models.MultipartUploadInfo
 		var err error
 		for attempt := 0; attempt < 5; attempt++ {
