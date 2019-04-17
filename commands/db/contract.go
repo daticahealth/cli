@@ -229,12 +229,13 @@ type IDb interface {
 	Backup(service *models.Service) (*models.Job, error)
 	Download(backupID, filePath string, service *models.Service) error
 	Export(filePath string, job *models.Job, service *models.Service) error
-	Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollection, mongoDatabase string, service *models.Service) (*models.Job, error)
+	Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollection, mongoDatabase string, service *models.Service, singleUploadMode bool) (*models.Job, error)
 	List(page, pageSize int, service *models.Service) (*[]models.Job, error)
 	TempDownloadURL(jobID string, service *models.Service) (*models.TempURL, error)
 	TempLogsURL(jobID string, serviceID string) (*models.TempURL, error)
 	DumpLogs(taskType string, job *models.Job, service *models.Service) error
 	NewEncryptReader(reader io.Reader, key, iv []byte) (*gcm.EncryptReader, error)
+	RetrievePodApiVersion() (*models.VersionInfo, error)
 }
 
 // SDb is a concrete implementation of IDb
