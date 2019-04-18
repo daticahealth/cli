@@ -110,7 +110,7 @@ func (d *SDb) Export(filePath string, job *models.Job, service *models.Service) 
 	}
 	contentEncoding := resp.Header.Get("Content-Encoding")
 	if contentEncoding == "gzip" {
-		file, err = d.Compress.NewDecompressWriteCloser(file, contentEncoding)
+		file, err = d.Compress.NewDecompressWriteCloser(file)
 		if err != nil {
 			return err
 		}

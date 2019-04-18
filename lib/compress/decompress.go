@@ -16,7 +16,8 @@ type DecompressWriteCloser struct {
 
 // NewDecompressWriteCloser takes an io.WriteCloser and wraps it in a type
 // that will decompress Writes to the io.WriteCloser as they are written.
-func (c *SCompress) NewDecompressWriteCloser(writeCloser io.WriteCloser, compressionType string) (*DecompressWriteCloser, error) {
+func (c *SCompress) NewDecompressWriteCloser(writeCloser io.WriteCloser) (*DecompressWriteCloser, error) {
+	// Supported compression format: gzip
 	pr, pw := io.Pipe()
 	done := make(chan bool)
 	go func() {

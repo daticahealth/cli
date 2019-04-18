@@ -6,7 +6,7 @@ import (
 
 // ICompress
 type ICompress interface {
-	NewDecompressWriteCloser(writeCloser io.WriteCloser, compressionType string) (*DecompressWriteCloser, error)
+	NewDecompressWriteCloser(writeCloser io.WriteCloser) (*DecompressWriteCloser, error)
 }
 
 // SCompress is an implementor of ICompress
