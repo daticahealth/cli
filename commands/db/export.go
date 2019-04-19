@@ -83,11 +83,7 @@ func (d *SDb) Export(filePath string, job *models.Job, service *models.Service) 
 	if err != nil {
 		return err
 	}
-	tr := &http.Transport{ // gzip encoded backups must first be decrypted
-		DisableCompression: true, // Disable automatic decompress
-	}
-	client := &http.Client{Transport: tr}
-	resp, err := client.Get(tempURL.URL)
+	resp, err := http.Get(tempURL.URL)
 	if err != nil {
 		return err
 	}
@@ -108,8 +104,8 @@ func (d *SDb) Export(filePath string, job *models.Job, service *models.Service) 
 	if err != nil {
 		return err
 	}
-	contentEncoding := resp.Header.Get("Content-Encoding")
-	if contentEncoding == "gzip" {
+	backupCompression := resp.Header.Get("x-amz-meta-datica-backup-compression")
+	if backupCompression == "gzip" {
 		file, err = d.Compress.NewDecompressWriteCloser(file)
 		if err != nil {
 			return err

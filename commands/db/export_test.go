@@ -72,7 +72,7 @@ func TestDbExport(t *testing.T) {
 	mux.HandleFunc("/backup",
 		func(w http.ResponseWriter, r *http.Request) {
 			test.AssertEquals(t, r.Method, "GET")
-			w.Header().Set("Content-Encoding", "gzip")
+			w.Header().Set("x-amz-meta-datica-backup-compression", "gzip")
 			w.Write([]byte{209, 44, 72, 61, 170, 141, 222, 50, 7, 77, 238, 154, 191, 243, 71, 35, 32, 87, 1, 202, 55, 166, 53, 255, 217, 162, 8, 99, 192, 90, 53, 141, 246, 100, 176, 40, 162, 199, 66, 105, 67, 232, 89, 36, 88, 135, 62, 247, 72, 175, 126, 189, 129, 184, 156, 50, 97, 239, 27, 52, 153, 13, 58, 31, 208, 0, 133, 34, 178, 168, 138, 94, 1, 4, 248, 121, 204, 184, 152, 136, 176}) // gcm encrypted gzip compressed "test" (concatenation of three gzip streams ["te", "st", "\n"], extra length is due to multiple compression headers)
 		},
 	)
