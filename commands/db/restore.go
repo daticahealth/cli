@@ -39,7 +39,7 @@ func (d *SDb) Restore(backupID string, service *models.Service) error {
 	if err != nil {
 		return err
 	}
-	if sj.Type != "backup" || (sj.Status != "finished" && sj.Status != "disappeared") {
+	if sj.Type != "backup" || (sj.Status != "finished") {
 		return errors.New("Only 'finished' 'backup' jobs may be restored")
 	}
 
