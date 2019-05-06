@@ -28,7 +28,7 @@ func CmdInit(serviceName string, noInput bool, remoteName string, overwriteRemot
 		if noInput {
 			return errors.New("--no-input was passed - both environment and service need to be explicitly provided.")
 		}
-		logrus.Println("To set up your local repository, we need to know what environment and service you want to push your code to.")
+		logrus.Println("To set up your local repository, you must specify what environment and service you want to push your code to.")
 	}
 
 	ip := pods.New(settings)
