@@ -28,6 +28,7 @@ var Cmd = models.Command{
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(cmd *cli.Cmd) {
 			cmd.CommandLong(BackupSubCmd.Name, BackupSubCmd.ShortHelp, BackupSubCmd.LongHelp, BackupSubCmd.CmdFunc(settings))
+			cmd.CommandLong(RestoreSubCmd.Name, RestoreSubCmd.ShortHelp, RestoreSubCmd.LongHelp, RestoreSubCmd.CmdFunc(settings))
 			cmd.CommandLong(DownloadSubCmd.Name, DownloadSubCmd.ShortHelp, DownloadSubCmd.LongHelp, DownloadSubCmd.CmdFunc(settings))
 			cmd.CommandLong(ExportSubCmd.Name, ExportSubCmd.ShortHelp, ExportSubCmd.LongHelp, ExportSubCmd.CmdFunc(settings))
 			cmd.CommandLong(ImportSubCmd.Name, ImportSubCmd.ShortHelp, ImportSubCmd.LongHelp, ImportSubCmd.CmdFunc(settings))
@@ -95,6 +96,37 @@ var DownloadSubCmd = models.Command{
 				}
 			}
 			subCmd.Spec = "DATABASE_NAME BACKUP_ID FILEPATH [-f]"
+		}
+	},
+}
+
+var RestoreSubCmd = models.Command{
+	Name:      "restore",
+	ShortHelp: "Restore a previously created backup",
+	LongHelp: "<code>db restore</code> restores a backup to your database. " +
+		"The restore job does not back up data before performing the database restore. Perform a backup prior to the restore if you have concerns about overwriting data. ",
+	"The restore command will confirm that you do not need to perform a backup. Once the restore job is started, the CLI will poll every few seconds until it finishes. ",
+	"Regardless of a successful restore or not, the logs for the restore will be printed to the console when the restore is finished. ",
+	"If an error occurs and the logs are not printed, you can use the db logs command to print out historical backup job logs. Here is a sample command\n\n" +
+		"<pre>\ndatica -E \"<your_env_name>\" db backup db01\n</pre>",
+	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
+		return func(subCmd *cli.Cmd) {
+			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service which was backed up (e.g. 'db01')")
+			backupID := subCmd.StringArg("BACKUP_ID", "", "The ID of the backup to download (found from \"datica backup list\")")
+			skipConfirm := subCmd.BoolOpt("y yes", false, "Skip warning and confirmation")
+			subCmd.Action = func() {
+				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
+					logrus.Fatal(err.Error())
+				}
+				if err := config.CheckRequiredAssociation(settings); err != nil {
+					logrus.Fatal(err.Error())
+				}
+				err := CmdRestore(*databaseName, *backupID, *skipConfirm, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings))
+				if err != nil {
+					logrus.Fatal(err.Error())
+				}
+			}
+			subCmd.Spec = "DATABASE_NAME BACKUP_ID [-y]"
 		}
 	},
 }
@@ -227,6 +259,7 @@ var LogsSubCmd = models.Command{
 // IDb
 type IDb interface {
 	Backup(service *models.Service) (*models.Job, error)
+	Restore(backupID string, service *models.Service) error
 	Download(backupID, filePath string, service *models.Service) error
 	Export(filePath string, job *models.Job, service *models.Service) error
 	Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollection, mongoDatabase string, service *models.Service, singleUploadMode bool) (*models.Job, error)
