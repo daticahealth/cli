@@ -23,6 +23,7 @@ import (
 
 const defaultRedirectLimit = 10
 
+// TLSHTTPManager is a extension of HTTPManager with explicit TLSv1.2 support.
 type TLSHTTPManager struct {
 	client *http.Client
 }
@@ -88,8 +89,8 @@ func (m *TLSHTTPManager) GetHeaders(sessionToken, version, pod, userID string) m
 // pointer your original object will be nil or an empty struct.
 func (m *TLSHTTPManager) ConvertResp(b []byte, statusCode int, s interface{}) error {
 	logrus.Debugf("%d resp: %s", statusCode, string(b))
-	if m.isError(statusCode) {
-		return m.convertError(b, statusCode)
+	if IsError(statusCode) {
+		return convertError(b, statusCode)
 	}
 	if b == nil || len(b) == 0 || s == nil {
 		return nil
@@ -97,10 +98,19 @@ func (m *TLSHTTPManager) ConvertResp(b []byte, statusCode int, s interface{}) er
 	return json.Unmarshal(b, s)
 }
 
+// ConvertError converts a known error response into a go-usable error.
+func ConvertError(resp *http.Response) error {
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	return convertError(b, resp.StatusCode)
+}
+
 // ConvertError takes in a response from one of the httpclient methods and converts it
 // to a usable error object.
 func (m *TLSHTTPManager) ConvertError(b []byte, statusCode int) (*models.Error, error) {
-	if !m.isError(statusCode) {
+	if !IsError(statusCode) {
 		return nil, errors.New("tried to convert a non-error response into an error")
 	}
 	var resp models.Error
@@ -108,13 +118,13 @@ func (m *TLSHTTPManager) ConvertError(b []byte, statusCode int) (*models.Error, 
 	return &resp, err
 }
 
-// isError checks if an HTTP response code is outside of the "OK" range.
-func (m *TLSHTTPManager) isError(statusCode int) bool {
+// IsError checks if an HTTP response code is outside of the "OK" range.
+func IsError(statusCode int) bool {
 	return statusCode < 200 || statusCode >= 300
 }
 
 // convertError attempts to convert a response into a usable error object.
-func (m *TLSHTTPManager) convertError(b []byte, statusCode int) error {
+func convertError(b []byte, statusCode int) error {
 	msg := fmt.Sprintf("(%d)", statusCode)
 	if b != nil && len(b) > 0 {
 		var errs models.Error

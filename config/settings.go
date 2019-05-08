@@ -175,6 +175,7 @@ func SaveSettings(settings *models.Settings) error {
 // in the given settings object. It then populates the EnvironmentID and
 // ServiceID on the settings object with appropriate values.
 func SetGivenEnv(envMatch string, settings *models.Settings) {
+	settings.GivenEnvName = envMatch
 	for _, e := range settings.Environments {
 		if e.Name == envMatch || e.EnvironmentID == envMatch {
 			settings.EnvironmentID = e.EnvironmentID
