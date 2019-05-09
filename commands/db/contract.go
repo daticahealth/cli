@@ -10,6 +10,7 @@ import (
 	"github.com/daticahealth/cli/commands/services"
 	"github.com/daticahealth/cli/config"
 	"github.com/daticahealth/cli/lib/auth"
+	"github.com/daticahealth/cli/lib/compress"
 	"github.com/daticahealth/cli/lib/crypto"
 	"github.com/daticahealth/cli/lib/jobs"
 	"github.com/daticahealth/cli/lib/prompts"
@@ -57,7 +58,7 @@ var BackupSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdBackup(*databaseName, *skipPoll, New(settings, crypto.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
+				err := CmdBackup(*databaseName, *skipPoll, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -90,7 +91,7 @@ var DownloadSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdDownload(*databaseName, *backupID, *filePath, *force, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings))
+				err := CmdDownload(*databaseName, *backupID, *filePath, *force, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -153,7 +154,7 @@ var ExportSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdExport(*databaseName, *filePath, *force, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
+				err := CmdExport(*databaseName, *filePath, *force, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -191,7 +192,7 @@ var ImportSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdImport(*databaseName, *filePath, *mongoCollection, *mongoDatabase, *skipBackup, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
+				err := CmdImport(*databaseName, *filePath, *mongoCollection, *mongoDatabase, *skipBackup, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -219,7 +220,7 @@ var ListSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdList(*databaseName, *page, *pageSize, New(settings, crypto.New(), jobs.New(settings)), services.New(settings))
+				err := CmdList(*databaseName, *page, *pageSize, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -246,7 +247,7 @@ var LogsSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdLogs(*databaseName, *backupID, New(settings, crypto.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
+				err := CmdLogs(*databaseName, *backupID, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -275,14 +276,16 @@ type IDb interface {
 type SDb struct {
 	Settings *models.Settings
 	Crypto   crypto.ICrypto
+	Compress compress.ICompress
 	Jobs     jobs.IJobs
 }
 
 // New returns an instance of IDb
-func New(settings *models.Settings, crypto crypto.ICrypto, jobs jobs.IJobs) IDb {
+func New(settings *models.Settings, crypto crypto.ICrypto, compress compress.ICompress, jobs jobs.IJobs) IDb {
 	return &SDb{
 		Settings: settings,
 		Crypto:   crypto,
+		Compress: compress,
 		Jobs:     jobs,
 	}
 }

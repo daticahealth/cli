@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/daticahealth/cli/commands/services"
+	"github.com/daticahealth/cli/lib/compress"
 	"github.com/daticahealth/cli/lib/crypto"
 	"github.com/daticahealth/cli/lib/jobs"
 	"github.com/daticahealth/cli/test"
@@ -70,7 +71,7 @@ func TestDbBackup(t *testing.T) {
 		queriedJob = false
 
 		// test
-		err := CmdBackup(data.databaseName, data.skipPoll, New(settings, crypto.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
+		err := CmdBackup(data.databaseName, data.skipPoll, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
 
 		// assert
 		if err != nil != data.expectErr {

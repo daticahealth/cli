@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/daticahealth/cli/commands/services"
+	"github.com/daticahealth/cli/lib/compress"
 	"github.com/daticahealth/cli/lib/crypto"
 	"github.com/daticahealth/cli/lib/jobs"
 	"github.com/daticahealth/cli/test"
@@ -44,7 +45,7 @@ func TestDbList(t *testing.T) {
 		t.Logf("Data: %+v", data)
 
 		// test
-		err := CmdList(data.databaseName, data.page, data.pageSize, New(settings, crypto.New(), jobs.New(settings)), services.New(settings))
+		err := CmdList(data.databaseName, data.page, data.pageSize, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings))
 
 		// assert
 		if err != nil != data.expectErr {
