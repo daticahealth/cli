@@ -109,7 +109,7 @@ var RestoreSubCmd = models.Command{
 		"The restore command will confirm that you do not need to perform a backup. Once the restore job is started, the CLI will poll every few seconds until it finishes. " +
 		"Regardless of a successful restore or not, the logs for the restore will be printed to the console when the restore is finished. " +
 		"If an error occurs and the logs are not printed, you can use the db logs command to print out historical backup job logs. Here is a sample command\n\n" +
-		"<pre>\ndatica -E \"<your_env_name>\" db restore 00000000-0000-0000-0000-000000000000\n</pre>",
+		"<pre>\ndatica -E \"<your_env_name>\" db restore db01 00000000-0000-0000-0000-000000000000\n</pre>",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
 			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service which was backed up (e.g. 'db01')")
