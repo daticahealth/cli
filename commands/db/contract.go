@@ -17,7 +17,7 @@ import (
 	"github.com/daticahealth/cli/lib/transfer"
 	"github.com/daticahealth/cli/models"
 
-	"github.com/jault3/mow.cli"
+	cli "github.com/jault3/mow.cli"
 )
 
 // Cmd is the contract between the user and the CLI. This specifies the command
@@ -122,7 +122,7 @@ var RestoreSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdRestore(*databaseName, *backupID, *skipConfirm, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings))
+				err := CmdRestore(*databaseName, *backupID, *skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
