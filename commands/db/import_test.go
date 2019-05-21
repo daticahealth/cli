@@ -403,7 +403,7 @@ func TestDbImportSingleUploadMode(t *testing.T) {
 		backedUp = false
 
 		// test
-		err := CmdImport(data.databaseName, data.filePath, data.collection, data.database, data.skipBackup, New(settings, crypto.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings), jobs.New(settings))
+		err := CmdImport(data.databaseName, data.filePath, data.collection, data.database, data.skipBackup, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings), jobs.New(settings))
 
 		// assert
 		if err != nil {
