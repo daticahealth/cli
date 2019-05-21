@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/daticahealth/cli/commands/services"
+	"github.com/daticahealth/cli/lib/compress"
 	"github.com/daticahealth/cli/lib/crypto"
 	"github.com/daticahealth/cli/lib/jobs"
 	"github.com/daticahealth/cli/test"
@@ -74,7 +75,7 @@ func TestDbRestore(t *testing.T) {
 		t.Logf("Data: %+v", data)
 
 		// test
-		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
+		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
 
 		// assert
 		if err != nil {
@@ -108,7 +109,7 @@ func TestDbRestoreBackupNotFinished(t *testing.T) {
 		t.Logf("Data: %+v", data)
 
 		// test
-		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
+		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
 
 		// assert
 		if err == nil {
@@ -140,7 +141,7 @@ func TestDbRestoreJobNotBackup(t *testing.T) {
 		t.Logf("Data: %+v", data)
 
 		// test
-		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
+		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
 
 		// assert
 		if err == nil {
@@ -184,7 +185,7 @@ func TestDbRestoreRestoreNeverFinishes(t *testing.T) {
 		t.Logf("Data: %+v", data)
 
 		// test
-		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
+		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
 
 		// assert
 		if err == nil {
