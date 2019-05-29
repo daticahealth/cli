@@ -11,7 +11,7 @@ import (
 	"github.com/daticahealth/cli/models"
 )
 
-func CmdRestore(databaseName, backupID string, skipConfirm bool, id IDb, ip prompts.IPrompts, is services.IServices) error {
+func CmdRestore(databaseName, backupID, mongoDatabase string, skipConfirm bool, id IDb, ip prompts.IPrompts, is services.IServices) error {
 	if !skipConfirm {
 		err := ip.YesNo("A database restore will be performed immediately. All current data will be lost if not included in the specified backup. No backup will be taken beforehand - please do so now if you need to.", "Do you wish to proceed (y/n)? ")
 		if err != nil {
@@ -25,7 +25,7 @@ func CmdRestore(databaseName, backupID string, skipConfirm bool, id IDb, ip prom
 	if service == nil {
 		return fmt.Errorf("Could not find a service with the label \"%s\". You can list services with the \"datica services list\" command.", databaseName)
 	}
-	err = id.Restore(backupID, service)
+	err = id.Restore(backupID, service, mongoDatabase)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func CmdRestore(databaseName, backupID string, skipConfirm bool, id IDb, ip prom
 }
 
 // Restore a backup to the database.
-func (d *SDb) Restore(backupID string, service *models.Service) error {
+func (d *SDb) Restore(backupID string, service *models.Service, mongoDatabase string) error {
 	sj, err := d.Jobs.Retrieve(backupID, service.ID, false)
 	if err != nil {
 		return err
@@ -43,10 +43,14 @@ func (d *SDb) Restore(backupID string, service *models.Service) error {
 		return errors.New("Only 'finished' 'backup' jobs may be restored")
 	}
 
+	restoreParams := map[string]string{}
+	if mongoDatabase != "" {
+		restoreParams["database"] = mongoDatabase
+	}
+	restoreParams["jobId"] = backupID
+
 	headers := d.Settings.HTTPManager.GetHeaders(d.Settings.SessionToken, d.Settings.Version, d.Settings.Pod, d.Settings.UsersID)
-	body, err := json.Marshal(map[string]string{
-		"jobId": backupID,
-	})
+	body, err := json.Marshal(restoreParams)
 	if err != nil {
 		return err
 	}

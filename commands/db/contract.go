@@ -113,6 +113,7 @@ var RestoreSubCmd = models.Command{
 		return func(subCmd *cli.Cmd) {
 			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service which was backed up (e.g. 'db01')")
 			backupID := subCmd.StringArg("BACKUP_ID", "", "The ID of the backup to download (found from \"datica backup list\")")
+			mongoDatabase := subCmd.StringOpt("d mongo-database", "", "If restoring a mongo service, the name of the database to restore")
 			skipConfirm := subCmd.BoolOpt("y yes", false, "Skip warning and confirmation")
 			subCmd.Action = func() {
 				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
@@ -121,7 +122,7 @@ var RestoreSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdRestore(*databaseName, *backupID, *skipConfirm, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings))
+				err := CmdRestore(*databaseName, *backupID, *mongoDatabase, *skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -259,7 +260,7 @@ var LogsSubCmd = models.Command{
 // IDb
 type IDb interface {
 	Backup(service *models.Service) (*models.Job, error)
-	Restore(backupID string, service *models.Service) error
+	Restore(backupID string, service *models.Service, mongoDatabase string) error
 	Download(backupID, filePath string, service *models.Service) error
 	Export(filePath string, job *models.Job, service *models.Service) error
 	Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollection, mongoDatabase string, service *models.Service, singleUploadMode bool) (*models.Job, error)
