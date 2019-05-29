@@ -128,7 +128,7 @@ var RestoreSubCmd = models.Command{
 					logrus.Fatal(err.Error())
 				}
 			}
-			subCmd.Spec = "DATABASE_NAME BACKUP_ID [-y]"
+			subCmd.Spec = "DATABASE_NAME BACKUP_ID [-d][-y]"
 		}
 	},
 }
@@ -198,7 +198,7 @@ var ImportSubCmd = models.Command{
 					logrus.Fatal(err.Error())
 				}
 			}
-			subCmd.Spec = "DATABASE_NAME FILEPATH [-s][-d [-c]]"
+			subCmd.Spec = "DATABASE_NAME FILEPATH [-s][-d][-c]"
 		}
 	},
 }
