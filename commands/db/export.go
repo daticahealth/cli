@@ -11,6 +11,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/daticahealth/cli/commands/services"
+	"github.com/daticahealth/cli/lib/httpclient"
 	"github.com/daticahealth/cli/lib/jobs"
 	"github.com/daticahealth/cli/lib/prompts"
 	"github.com/daticahealth/cli/lib/transfer"
@@ -76,7 +77,7 @@ func CmdExport(databaseName, filePath string, force bool, id IDb, ip prompts.IPr
 // Export dumps all data from a database service and downloads the encrypted
 // data to the local machine. The export is accomplished by first creating a
 // backup. Once finished, the CLI asks where the file can be downloaded from.
-// The file is downloaded, decrypted, and saved locally.
+// The file is downloaded, decrypted, decompressed, and saved locally.
 func (d *SDb) Export(filePath string, job *models.Job, service *models.Service) error {
 	tempURL, err := d.TempDownloadURL(job.ID, service)
 	if err != nil {
@@ -87,14 +88,30 @@ func (d *SDb) Export(filePath string, job *models.Job, service *models.Service) 
 		return err
 	}
 	defer resp.Body.Close()
-	size, err := strconv.Atoi(resp.Header.Get("Content-Length"))
+	if httpclient.IsError(resp.StatusCode) {
+		return httpclient.ConvertError(resp)
+	}
+	contentLength := resp.Header.Get("Content-Length")
+	if contentLength == "" {
+		return fmt.Errorf("Export succeeded, but Content-Length was not present in the response.")
+	}
+	size, err := strconv.Atoi(contentLength)
 	if err != nil {
 		return err
 	}
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	var file io.WriteCloser
+	file, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
+	backupCompression := resp.Header.Get("x-amz-meta-datica-backup-compression")
+	if backupCompression == "gzip" {
+		file, err = d.Compress.NewDecompressWriteCloser(file)
+		if err != nil {
+			return err
+		}
+	}
+
 	dfw, err := d.Crypto.NewDecryptWriteCloser(file, job.Backup.Key, job.Backup.IV)
 	if err != nil {
 		return err

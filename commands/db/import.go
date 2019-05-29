@@ -279,6 +279,12 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 	importParams["encryptionKey"] = string(d.Crypto.Hex(key, crypto.KeySize*2))
 	importParams["encryptionIV"] = string(d.Crypto.Hex(iv, crypto.IVSize*2))
 	importParams["dropDatabase"] = false
+	if mongoDatabase != "" {
+		importParams["database"] = mongoDatabase
+	}
+	if mongoCollection != "" {
+		importParams["databaseCollection"] = mongoCollection
+	}
 
 	b, err := json.Marshal(importParams)
 	if err != nil {

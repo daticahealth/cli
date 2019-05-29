@@ -10,13 +10,14 @@ import (
 	"github.com/daticahealth/cli/commands/services"
 	"github.com/daticahealth/cli/config"
 	"github.com/daticahealth/cli/lib/auth"
+	"github.com/daticahealth/cli/lib/compress"
 	"github.com/daticahealth/cli/lib/crypto"
 	"github.com/daticahealth/cli/lib/jobs"
 	"github.com/daticahealth/cli/lib/prompts"
 	"github.com/daticahealth/cli/lib/transfer"
 	"github.com/daticahealth/cli/models"
 
-	"github.com/jault3/mow.cli"
+	cli "github.com/jault3/mow.cli"
 )
 
 // Cmd is the contract between the user and the CLI. This specifies the command
@@ -57,7 +58,7 @@ var BackupSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdBackup(*databaseName, *skipPoll, New(settings, crypto.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
+				err := CmdBackup(*databaseName, *skipPoll, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -90,7 +91,7 @@ var DownloadSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdDownload(*databaseName, *backupID, *filePath, *force, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings))
+				err := CmdDownload(*databaseName, *backupID, *filePath, *force, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -108,7 +109,7 @@ var RestoreSubCmd = models.Command{
 		"The restore command will confirm that you do not need to perform a backup. Once the restore job is started, the CLI will poll every few seconds until it finishes. " +
 		"Regardless of a successful restore or not, the logs for the restore will be printed to the console when the restore is finished. " +
 		"If an error occurs and the logs are not printed, you can use the db logs command to print out historical backup job logs. Here is a sample command\n\n" +
-		"<pre>\ndatica -E \"<your_env_name>\" db backup db01\n</pre>",
+		"<pre>\ndatica -E \"<your_env_name>\" db restore db01 00000000-0000-0000-0000-000000000000\n</pre>",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
 			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service which was backed up (e.g. 'db01')")
@@ -154,7 +155,7 @@ var ExportSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdExport(*databaseName, *filePath, *force, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
+				err := CmdExport(*databaseName, *filePath, *force, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -192,7 +193,7 @@ var ImportSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdImport(*databaseName, *filePath, *mongoCollection, *mongoDatabase, *skipBackup, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
+				err := CmdImport(*databaseName, *filePath, *mongoCollection, *mongoDatabase, *skipBackup, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -220,7 +221,7 @@ var ListSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdList(*databaseName, *page, *pageSize, New(settings, crypto.New(), jobs.New(settings)), services.New(settings))
+				err := CmdList(*databaseName, *page, *pageSize, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -247,7 +248,7 @@ var LogsSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdLogs(*databaseName, *backupID, New(settings, crypto.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
+				err := CmdLogs(*databaseName, *backupID, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -276,14 +277,16 @@ type IDb interface {
 type SDb struct {
 	Settings *models.Settings
 	Crypto   crypto.ICrypto
+	Compress compress.ICompress
 	Jobs     jobs.IJobs
 }
 
 // New returns an instance of IDb
-func New(settings *models.Settings, crypto crypto.ICrypto, jobs jobs.IJobs) IDb {
+func New(settings *models.Settings, crypto crypto.ICrypto, compress compress.ICompress, jobs jobs.IJobs) IDb {
 	return &SDb{
 		Settings: settings,
 		Crypto:   crypto,
+		Compress: compress,
 		Jobs:     jobs,
 	}
 }
