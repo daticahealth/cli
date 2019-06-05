@@ -104,8 +104,9 @@ func (d *SDb) Export(filePath string, job *models.Job, service *models.Service) 
 	if err != nil {
 		return err
 	}
+	// Decompress (leave MongoDB backups in compressed .tgz format)
 	backupCompression := resp.Header.Get("x-amz-meta-datica-backup-compression")
-	if backupCompression == "gzip" {
+	if backupCompression == "gzip" && service.Name != "mongodb" {
 		file, err = d.Compress.NewDecompressWriteCloser(file)
 		if err != nil {
 			return err
