@@ -49,7 +49,7 @@ func CmdBackup(databaseName string, skipPoll bool, id IDb, is services.IServices
 	} else if isSnapshotBackup {
 		logrus.Printf("This is a snapshot backup, it may be a while before this backup shows up in the \"datica db list %s\" command.", databaseName)
 	}
-	logrus.Printf("You can download your backup with the \"datica db download %s %s ./output_file_path\" command", databaseName, job.ID)
+	logrus.Printf("You can download your backup with the \"datica db download %s %s ./output_file_path\" command. You can restore your database to the backup state with the \"datica db restore %s %s\" command. Backups expire after 30 days. Please note that if your service is deleted, so will all backup jobs associated with that service.", databaseName, job.ID, databaseName, job.ID)
 	return nil
 }
 
