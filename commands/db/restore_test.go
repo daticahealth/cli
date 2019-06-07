@@ -75,7 +75,7 @@ func TestDbRestore(t *testing.T) {
 		t.Logf("Data: %+v", data)
 
 		// test
-		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
+		err := CmdRestore(data.databaseName, data.backupID, "", data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
 
 		// assert
 		if err != nil {
@@ -109,7 +109,7 @@ func TestDbRestoreBackupNotFinished(t *testing.T) {
 		t.Logf("Data: %+v", data)
 
 		// test
-		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
+		err := CmdRestore(data.databaseName, data.backupID, "", data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
 
 		// assert
 		if err == nil {
@@ -141,7 +141,7 @@ func TestDbRestoreJobNotBackup(t *testing.T) {
 		t.Logf("Data: %+v", data)
 
 		// test
-		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
+		err := CmdRestore(data.databaseName, data.backupID, "", data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
 
 		// assert
 		if err == nil {
@@ -185,7 +185,7 @@ func TestDbRestoreRestoreNeverFinishes(t *testing.T) {
 		t.Logf("Data: %+v", data)
 
 		// test
-		err := CmdRestore(data.databaseName, data.backupID, data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
+		err := CmdRestore(data.databaseName, data.backupID, "", data.skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings))
 
 		// assert
 		if err == nil {
