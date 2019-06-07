@@ -23,7 +23,7 @@ func CmdRestore(databaseName, backupID, mongoDatabase string, skipConfirm bool, 
 	pgWarn := fmt.Sprintf("WARNING: postgres restore will fail if any users are connected to the database. Before proceeding please close all open consoles and database connections. If needed, please contact Datica Support at https://datica.com/support to stop the \"%s\" service.", service.Label)
 	if !skipConfirm {
 		msg := "A database restore will be performed immediately. All current data will be lost if not included in the specified backup. No backup will be taken beforehand - please do so now if you need to."
-		if service.Name == "postgres" {
+		if service.Name == "postgresql" {
 			sep := " " //space
 			msg = strings.Join([]string{msg, pgWarn}, sep)
 		}
@@ -32,8 +32,8 @@ func CmdRestore(databaseName, backupID, mongoDatabase string, skipConfirm bool, 
 			return err
 		}
 	} else {
-		if service.Name == "postgres" {
-			fmt.Printf(pgWarn) // no prompt, but display the alert
+		if service.Name == "postgresql" {
+			fmt.Println(pgWarn) // no prompt, but display the alert
 		}
 	}
 	err = id.Restore(backupID, service, mongoDatabase)
