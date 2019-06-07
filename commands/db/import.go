@@ -41,6 +41,9 @@ func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, sk
 	if service == nil {
 		return fmt.Errorf("Could not find a service with the label \"%s\". You can list services with the \"datica services list\" command.", databaseName)
 	}
+	if service.Name == "postgres" {
+		fmt.Printf("WARNING: Import cannot DROP DATABASE \"catalyzeDB\". Ensure your import individually removes any neccessary \"catalyzeDB\" objects, or import only into newly created postgres services where the \"catalyzeDB\" database is already empty.")
+	}
 	key := make([]byte, crypto.KeySize)
 	iv := make([]byte, crypto.IVSize)
 	rand.Read(key)

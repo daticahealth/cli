@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/daticahealth/cli/commands/services"
@@ -12,18 +13,28 @@ import (
 )
 
 func CmdRestore(databaseName, backupID, mongoDatabase string, skipConfirm bool, id IDb, ip prompts.IPrompts, is services.IServices) error {
-	if !skipConfirm {
-		err := ip.YesNo("A database restore will be performed immediately. All current data will be lost if not included in the specified backup. No backup will be taken beforehand - please do so now if you need to.", "Do you wish to proceed (y/n)? ")
-		if err != nil {
-			return err
-		}
-	}
 	service, err := is.RetrieveByLabel(databaseName)
 	if err != nil {
 		return err
 	}
 	if service == nil {
 		return fmt.Errorf("Could not find a service with the label \"%s\". You can list services with the \"datica services list\" command.", databaseName)
+	}
+	pgWarn := fmt.Sprintf("WARNING: postgres restore will fail if any users are connected to the database. Before proceeding please close all open consoles and database connections. If needed, please contact Datica Support at https://datica.com/support to stop the \"%s\" service.", service.Label)
+	if !skipConfirm {
+		msg := "A database restore will be performed immediately. All current data will be lost if not included in the specified backup. No backup will be taken beforehand - please do so now if you need to."
+		if service.Name == "postgres" {
+			sep := " " //space
+			msg = strings.Join([]string{msg, pgWarn}, sep)
+		}
+		err := ip.YesNo(msg, "Do you wish to proceed (y/n)? ")
+		if err != nil {
+			return err
+		}
+	} else {
+		if service.Name == "postgres" {
+			fmt.Printf(pgWarn) // no prompt, but display the alert
+		}
 	}
 	err = id.Restore(backupID, service, mongoDatabase)
 	if err != nil {
