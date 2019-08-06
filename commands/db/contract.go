@@ -29,7 +29,7 @@ var Cmd = models.Command{
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(cmd *cli.Cmd) {
 			cmd.CommandLong(BackupSubCmd.Name, BackupSubCmd.ShortHelp, BackupSubCmd.LongHelp, BackupSubCmd.CmdFunc(settings))
-			cmd.CommandLong(RestoreSubCmd.Name, RestoreSubCmd.ShortHelp, RestoreSubCmd.LongHelp, RestoreSubCmd.CmdFunc(settings))
+			// cmd.CommandLong(RestoreSubCmd.Name, RestoreSubCmd.ShortHelp, RestoreSubCmd.LongHelp, RestoreSubCmd.CmdFunc(settings))
 			cmd.CommandLong(DownloadSubCmd.Name, DownloadSubCmd.ShortHelp, DownloadSubCmd.LongHelp, DownloadSubCmd.CmdFunc(settings))
 			cmd.CommandLong(ExportSubCmd.Name, ExportSubCmd.ShortHelp, ExportSubCmd.LongHelp, ExportSubCmd.CmdFunc(settings))
 			cmd.CommandLong(ImportSubCmd.Name, ImportSubCmd.ShortHelp, ImportSubCmd.LongHelp, ImportSubCmd.CmdFunc(settings))
