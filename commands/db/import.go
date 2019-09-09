@@ -219,11 +219,11 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 			}
 
 			var uploadResp *http.Response
-			done := make(chan bool)
 			for attempt := 0; attempt < 5; attempt++ {
 				tempReader := bytes.NewReader(readBuffer)
 				chunkRT := transfer.NewReaderTransfer(io.LimitReader(tempReader, int64(chunkSize)), int(chunkSize))
 
+				done := make(chan bool)
 				go printTransferStatus(false, chunkRT, i, numChunks, done)
 
 				req, err := http.NewRequest("PUT", tmpURL.URL, chunkRT)
@@ -231,6 +231,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 
 				uploadResp, err = http.DefaultClient.Do(req)
 				if err == nil && uploadResp.StatusCode == 200 {
+					done <- true
 					break
 				}
 				if uploadResp == nil {
@@ -238,10 +239,10 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 				} else {
 					logrus.Printf("\nChunk upload %s failed.\nResponse code: %s\nErr: %s\nRetrying...", strconv.Itoa(i), strconv.Itoa(uploadResp.StatusCode), err)
 				}
+				done <- false
 				time.Sleep(time.Second * 15)
 			}
 			if err != nil {
-				done <- false
 				return nil, err
 			}
 			if uploadResp == nil {
@@ -249,7 +250,6 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 			} else {
 				defer uploadResp.Body.Close()
 				if uploadResp.StatusCode != 200 {
-					done <- false
 					b, err := ioutil.ReadAll(uploadResp.Body)
 					return nil, fmt.Errorf("Failed to upload import file - received status code %d %s %s", uploadResp.StatusCode, string(b), err)
 				}
@@ -260,7 +260,6 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 				})
 			}
 			uploadFilename = uploadInfo.FileName
-			done <- true
 		}
 
 		for attempt := 0; attempt < 5; attempt++ {
