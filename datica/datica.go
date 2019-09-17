@@ -90,7 +90,7 @@ func Run() {
 		}
 	}
 
-	var app = cli.App("datica", fmt.Sprintf("Datica CLI version %s. A lot has changed in the new Datica CLI! Check out our new CLI guide to see what has changed https://resources.datica.com/compliant-cloud/articles/guides/cli-migration-v4", config.VERSION))
+	var app = cli.App("datica", fmt.Sprintf("Datica CLI version %s", config.VERSION))
 	app.DescLocation = cli.DescriptionLocationBottom
 	settings := &models.Settings{}
 	InitGlobalOpts(app, settings)

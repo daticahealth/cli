@@ -10,13 +10,14 @@ import (
 	"github.com/daticahealth/cli/commands/services"
 	"github.com/daticahealth/cli/config"
 	"github.com/daticahealth/cli/lib/auth"
+	"github.com/daticahealth/cli/lib/compress"
 	"github.com/daticahealth/cli/lib/crypto"
 	"github.com/daticahealth/cli/lib/jobs"
 	"github.com/daticahealth/cli/lib/prompts"
 	"github.com/daticahealth/cli/lib/transfer"
 	"github.com/daticahealth/cli/models"
 
-	"github.com/jault3/mow.cli"
+	cli "github.com/jault3/mow.cli"
 )
 
 // Cmd is the contract between the user and the CLI. This specifies the command
@@ -28,6 +29,7 @@ var Cmd = models.Command{
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(cmd *cli.Cmd) {
 			cmd.CommandLong(BackupSubCmd.Name, BackupSubCmd.ShortHelp, BackupSubCmd.LongHelp, BackupSubCmd.CmdFunc(settings))
+			// cmd.CommandLong(RestoreSubCmd.Name, RestoreSubCmd.ShortHelp, RestoreSubCmd.LongHelp, RestoreSubCmd.CmdFunc(settings))
 			cmd.CommandLong(DownloadSubCmd.Name, DownloadSubCmd.ShortHelp, DownloadSubCmd.LongHelp, DownloadSubCmd.CmdFunc(settings))
 			cmd.CommandLong(ExportSubCmd.Name, ExportSubCmd.ShortHelp, ExportSubCmd.LongHelp, ExportSubCmd.CmdFunc(settings))
 			cmd.CommandLong(ImportSubCmd.Name, ImportSubCmd.ShortHelp, ImportSubCmd.LongHelp, ImportSubCmd.CmdFunc(settings))
@@ -56,7 +58,7 @@ var BackupSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdBackup(*databaseName, *skipPoll, New(settings, crypto.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
+				err := CmdBackup(*databaseName, *skipPoll, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -89,12 +91,47 @@ var DownloadSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdDownload(*databaseName, *backupID, *filePath, *force, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings))
+				err := CmdDownload(*databaseName, *backupID, *filePath, *force, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
 			}
 			subCmd.Spec = "DATABASE_NAME BACKUP_ID FILEPATH [-f]"
+		}
+	},
+}
+
+var RestoreSubCmd = models.Command{
+	Name:      "restore",
+	ShortHelp: "Restore a previously created backup",
+	LongHelp: "<code>db restore</code> restores a backup to your database. " +
+		"The restore job does not back up data before performing the database restore. Perform a backup prior to the restore if you have concerns about overwriting data. " +
+		"The restore command will confirm that you do not need to perform a backup. " +
+		"When restoring data to postgres, please close all open consoles and database connections before proceeding. " +
+		"If any users are connected to the database, postgres restore will fail. " +
+		"Once the restore job is started, the CLI will poll every few seconds until it finishes. " +
+		"Regardless of a successful restore or not, the logs for the restore will be printed to the console when the restore is finished. " +
+		"If an error occurs and the logs are not printed, you can use the db logs command to print out historical backup job logs. Here is a sample command\n\n" +
+		"<pre>\ndatica -E \"<your_env_name>\" db restore db01 00000000-0000-0000-0000-000000000000\n</pre>",
+	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
+		return func(subCmd *cli.Cmd) {
+			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database service which was backed up (e.g. 'db01')")
+			backupID := subCmd.StringArg("BACKUP_ID", "", "The ID of the backup to download (found from \"datica backup list\")")
+			mongoDatabase := subCmd.StringOpt("d mongo-database", "", "If restoring a mongo service, the name of the database to restore")
+			skipConfirm := subCmd.BoolOpt("y yes", false, "Skip warning and confirmation")
+			subCmd.Action = func() {
+				if _, err := auth.New(settings, prompts.New()).Signin(); err != nil {
+					logrus.Fatal(err.Error())
+				}
+				if err := config.CheckRequiredAssociation(settings); err != nil {
+					logrus.Fatal(err.Error())
+				}
+				err := CmdRestore(*databaseName, *backupID, *mongoDatabase, *skipConfirm, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings))
+				if err != nil {
+					logrus.Fatal(err.Error())
+				}
+			}
+			subCmd.Spec = "DATABASE_NAME BACKUP_ID [-d][-y]"
 		}
 	},
 }
@@ -121,7 +158,7 @@ var ExportSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdExport(*databaseName, *filePath, *force, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
+				err := CmdExport(*databaseName, *filePath, *force, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -144,7 +181,9 @@ var ImportSubCmd = models.Command{
 		"When importing data into mongo, you may specify the database and collection to import into using the <code>-d</code> and <code>-c</code> flags respectively. " +
 		"Regardless of a successful import or not, the logs for the import will be printed to the console when the import is finished. " +
 		"Before an import takes place, your database is backed up automatically in case any issues arise. Here is a sample command\n\n" +
-		"<pre>\ndatica -E \"<your_env_name>\" db import db01 ./db.sql\n</pre>",
+		"<pre>\ndatica -E \"<your_env_name>\" db import db01 ./db.sql\n</pre>\n\n" +
+		"When importing data into postgres, import cannot DROP DATABASE \"catalyzeDB\". " +
+		"Ensure your import individually removes any neccessary \"catalyzeDB\" objects, or import only into newly created postgres services where the \"catalyzeDB\" database is already empty.\n",
 	CmdFunc: func(settings *models.Settings) func(cmd *cli.Cmd) {
 		return func(subCmd *cli.Cmd) {
 			databaseName := subCmd.StringArg("DATABASE_NAME", "", "The name of the database to import data to (e.g. 'db01')")
@@ -159,12 +198,12 @@ var ImportSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdImport(*databaseName, *filePath, *mongoCollection, *mongoDatabase, *skipBackup, New(settings, crypto.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
+				err := CmdImport(*databaseName, *filePath, *mongoCollection, *mongoDatabase, *skipBackup, New(settings, crypto.New(), compress.New(), jobs.New(settings)), prompts.New(), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
 			}
-			subCmd.Spec = "DATABASE_NAME FILEPATH [-s][-d [-c]]"
+			subCmd.Spec = "DATABASE_NAME FILEPATH [-s][-d][-c]"
 		}
 	},
 }
@@ -187,7 +226,7 @@ var ListSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdList(*databaseName, *page, *pageSize, New(settings, crypto.New(), jobs.New(settings)), services.New(settings))
+				err := CmdList(*databaseName, *page, *pageSize, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -214,7 +253,7 @@ var LogsSubCmd = models.Command{
 				if err := config.CheckRequiredAssociation(settings); err != nil {
 					logrus.Fatal(err.Error())
 				}
-				err := CmdLogs(*databaseName, *backupID, New(settings, crypto.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
+				err := CmdLogs(*databaseName, *backupID, New(settings, crypto.New(), compress.New(), jobs.New(settings)), services.New(settings), jobs.New(settings))
 				if err != nil {
 					logrus.Fatal(err.Error())
 				}
@@ -227,6 +266,7 @@ var LogsSubCmd = models.Command{
 // IDb
 type IDb interface {
 	Backup(service *models.Service) (*models.Job, error)
+	Restore(backupID string, service *models.Service, mongoDatabase string) error
 	Download(backupID, filePath string, service *models.Service) error
 	Export(filePath string, job *models.Job, service *models.Service) error
 	Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollection, mongoDatabase string, service *models.Service, singleUploadMode bool) (*models.Job, error)
@@ -242,14 +282,16 @@ type IDb interface {
 type SDb struct {
 	Settings *models.Settings
 	Crypto   crypto.ICrypto
+	Compress compress.ICompress
 	Jobs     jobs.IJobs
 }
 
 // New returns an instance of IDb
-func New(settings *models.Settings, crypto crypto.ICrypto, jobs jobs.IJobs) IDb {
+func New(settings *models.Settings, crypto crypto.ICrypto, compress compress.ICompress, jobs jobs.IJobs) IDb {
 	return &SDb{
 		Settings: settings,
 		Crypto:   crypto,
+		Compress: compress,
 		Jobs:     jobs,
 	}
 }

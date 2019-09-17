@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/daticahealth/cli/commands/services"
+	"github.com/daticahealth/cli/lib/compress"
 	"github.com/daticahealth/cli/lib/crypto"
 	"github.com/daticahealth/cli/lib/jobs"
 	"github.com/daticahealth/cli/test"
@@ -126,7 +127,7 @@ func TestDbImport(t *testing.T) {
 		backedUp = false
 
 		// test
-		err := CmdImport(data.databaseName, data.filePath, data.collection, data.database, data.skipBackup, New(settings, crypto.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings), jobs.New(settings))
+		err := CmdImport(data.databaseName, data.filePath, data.collection, data.database, data.skipBackup, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings), jobs.New(settings))
 
 		// assert
 		if err != nil {
@@ -239,7 +240,7 @@ func TestDbImportOverFiveGB(t *testing.T) {
 		backedUp = false
 
 		// test
-		err := CmdImport(data.databaseName, data.filePath, data.collection, data.database, data.skipBackup, New(settings, crypto.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings), jobs.New(settings))
+		err := CmdImport(data.databaseName, data.filePath, data.collection, data.database, data.skipBackup, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings), jobs.New(settings))
 
 		// assert
 		if err != nil {
@@ -309,7 +310,7 @@ func TestDbImportFailedUpload(t *testing.T) {
 	)
 
 	// test
-	err := CmdImport(dbName, importFilePath, "", "", true, New(settings, crypto.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings), jobs.New(settings))
+	err := CmdImport(dbName, importFilePath, "", "", true, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings), jobs.New(settings))
 
 	// assert
 	if err == nil {
@@ -402,7 +403,7 @@ func TestDbImportSingleUploadMode(t *testing.T) {
 		backedUp = false
 
 		// test
-		err := CmdImport(data.databaseName, data.filePath, data.collection, data.database, data.skipBackup, New(settings, crypto.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings), jobs.New(settings))
+		err := CmdImport(data.databaseName, data.filePath, data.collection, data.database, data.skipBackup, New(settings, crypto.New(), compress.New(), jobs.New(settings)), &test.FakePrompts{}, services.New(settings), jobs.New(settings))
 
 		// assert
 		if err != nil {
