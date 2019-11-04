@@ -24,6 +24,11 @@ import (
 	"github.com/daticahealth/cli/models"
 )
 
+const (
+	importRetryCount = 120
+	importRetryDelay = 30
+)
+
 func CmdImport(databaseName, filePath, mongoCollection, mongoDatabase string, skipBackup bool, id IDb, ip prompts.IPrompts, is services.IServices, ij jobs.IJobs) error {
 	singleUploadMode := false
 	versionInfo, err := id.RetrievePodApiVersion()
@@ -219,7 +224,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 			}
 
 			var uploadResp *http.Response
-			for attempt := 0; attempt < 5; attempt++ {
+			for attempt := 0; attempt < importRetryCount; attempt++ {
 				tempReader := bytes.NewReader(readBuffer)
 				chunkRT := transfer.NewReaderTransfer(io.LimitReader(tempReader, int64(chunkSize)), int(chunkSize))
 
@@ -240,7 +245,7 @@ func (d *SDb) Import(rt *transfer.ReaderTransfer, key, iv []byte, mongoCollectio
 					logrus.Printf("\nChunk upload %s failed.\nResponse code: %s\nErr: %s\nRetrying...", strconv.Itoa(i), strconv.Itoa(uploadResp.StatusCode), err)
 				}
 				done <- false
-				time.Sleep(time.Second * 15)
+				time.Sleep(time.Second * importRetryDelay)
 			}
 			if err != nil {
 				return nil, err
