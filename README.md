@@ -17,6 +17,7 @@ Once downloaded, the CLI will automatically update itself when a new version bec
 ### Darwin (Apple Mac)
 
  * [datica\_4.0.1\_darwin\_amd64.zip](https://github.com/daticahealth/cli/releases/download/4.0.1/datica_4.0.1_darwin_amd64.zip)
+ * [datica\ 4.4.1\darwin\ M1-ARM.tar.gz](https://github.com/daticahealth/cli/releases/download/4.4.1/datica_4.4.1_darwin_m1-arm.tar.gz)
 
 ### Linux
 
